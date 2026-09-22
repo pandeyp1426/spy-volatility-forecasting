@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spy-volatility-forecasting"
+version = "0.1.0"
+description = "A small, reproducible SPY volatility research baseline"
+requires-python = ">=3.11"
+authors = [{name = "Pradeep Pandey"}]
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "yfinance>=0.2.54",
+    "matplotlib>=3.8",
+    "pandas_market_calendars>=4.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+notebook = ["ipykernel>=6"]
+
+[project.scripts]
+spy-phase1 = "spy_volatility.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

@@ -1,0 +1,27 @@
+# Local Python environments and tooling
+.venv/
+venv/
+.tools/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+build/
+dist/
+
+# Local data and generated experiments (source and research notes stay tracked)
+data/
+artifacts/
+*.log
+
+# Credentials and local settings
+.env
+.env.*
+!.env.example
+.aws/
+credentials*
+*.pem
+*.key
+.DS_Store
+Thumbs.db
