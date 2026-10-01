@@ -285,13 +285,14 @@ def _read_snapshot(raw_path: Path, metadata_path: Path, settings: dict, calendar
     return raw, metadata
 
 
-def get_snapshot(data_config: dict, snapshot_dir: Path) -> tuple[pd.Series, dict, dict]:
+def get_snapshot(data_config: dict, snapshot_dir: Path, *, offline: bool = False) -> tuple[pd.Series, dict, dict]:
     """Return adjusted prices, verified metadata, and a passing data audit.
 
     raw.csv and metadata.json are immutable once present. A partial, changed,
     or corrupted cache causes a visible failure, never a silent redownload.
     Changing requests requires a new snapshot directory. Audit failures retain
-    the original downloaded snapshot for investigation.
+    the original downloaded snapshot for investigation. Offline mode requires
+    an existing snapshot and never calls the provider.
     """
     settings = _request_settings(data_config)
     calendar = data_config.get("calendar", "NYSE")
@@ -302,6 +303,8 @@ def get_snapshot(data_config: dict, snapshot_dir: Path) -> tuple[pd.Series, dict
     if raw_path.exists():
         raw, metadata = _read_snapshot(raw_path, metadata_path, settings, calendar)
     else:
+        if offline:
+            raise SnapshotError("Offline mode requires an existing raw.csv and metadata.json snapshot. Run once without --offline to download it.")
         raw = _download(settings)
         snapshot_dir.mkdir(parents=True, exist_ok=True)
         with raw_path.open("x", encoding="utf-8", newline="") as stream:

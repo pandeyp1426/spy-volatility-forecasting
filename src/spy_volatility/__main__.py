@@ -10,9 +10,10 @@ from .pipeline import run_phase1
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run the local SPY historical-volatility baseline")
     parser.add_argument("--config", default="configs/phase1.toml", help="Path to Phase 1 TOML configuration")
+    parser.add_argument("--offline", action="store_true", help="Require the saved snapshot; never download data")
     arguments = parser.parse_args()
     try:
-        result = run_phase1(arguments.config)
+        result = run_phase1(arguments.config, offline=arguments.offline)
     except Exception as error:
         print(f"{type(error).__name__}: {error}", file=sys.stderr)
         return 1

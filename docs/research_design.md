@@ -1,66 +1,77 @@
-# Phase 1 research design
+# How the forecast works
 
-Pradeep Pandey, University of Wisconsin–Stout. One-credit independent study with Dr. Augustine Twumasi.
+**Volatility measures how much returns vary.** Large swings mean higher volatility; small swings mean lower volatility. This project forecasts that variability, not whether SPY's price will rise or fall.
 
-The research question is whether simple statistical and machine-learning models improve short-term SPY volatility forecasts over a historical-volatility baseline. Phase 1 establishes the data and evaluation protocol. It does not fit linear regression or random forest and does not evaluate the reserved final test.
+## 1. Load and check prices
 
-## Timing, inputs, and target
+Download daily SPY prices through `yfinance` from **2014-11-01 inclusive to 2026-01-01 exclusive**. Use `Adj Close` with `auto_adjust=False`. The 2014 data supplies history for forecasts starting in 2015.
 
-A forecast is issued after trading session `t` closes. With adjusted close `P_t`, the daily log return is `r_t = ln(P_t / P_(t-1))`. A window of `w` daily returns needs `w+1` closing prices. Historical windows include the return ending at `t`.
+Save prices once with request settings, retrieval time, package versions, and a SHA-256 fingerprint. Later runs verify and reuse this snapshot. `--offline` requires it to exist. Relative data/output paths are resolved from the config file's grandparent directory.
 
-The default input vector is:
+Check that dates are ordered and unique, adjusted prices are finite and positive, and every expected `NYSE` trading session is present. Holidays are excluded; early-close days still count. Stop on bad data rather than filling or repairing it.
 
-| Input | Definition |
-| --- | --- |
-| 5-session volatility | Sample standard deviation of `r_(t-4), ..., r_t` |
-| 10-session volatility | Sample standard deviation of `r_(t-9), ..., r_t` |
-| 20-session volatility | Sample standard deviation of `r_(t-19), ..., r_t` |
-| Latest return | `r_t` |
-| 5-session return sum | `r_(t-4) + ... + r_t` |
+## 2. Calculate returns and the forecast
 
-The sum of log returns also equals `ln(P_t / P_(t-5))`. The baseline predicts the next target using only the 20-session volatility input; it has no fitted coefficients.
-
-The target is `sample_std(r_(t+1), ..., r_(t+5))`, with divisor `5-1`. All historical volatilities also use the sample formula (`ddof=1`). No square-root-of-252 annualization or square-root-of-five scaling is applied. The horizon defines the observations used to measure future **daily** volatility; the target is neither a five-day cumulative return nor its standard deviation across repeated five-day periods.
-
-Record the actual dates of `t+1` and `t+5` beside every target. Incomplete historical windows and incomplete future windows are excluded. The final five price observations therefore cannot be forecast examples with known outcomes. The first return is also undefined until a previous price is available.
-
-Ticker, dates, windows, horizon, and split boundaries are configurable. Changes are separate experiment choices and must be reported; the definitions above describe the initial five-session experiment.
-
-## Source, snapshot, and audit
-
-The initial candidate is Yahoo Finance accessed through `yfinance`. Request daily observations from 2014-11-01 inclusive to 2026-01-01 exclusive. The 2014 portion supplies warm-up for forecast dates beginning in 2015. Set `auto_adjust=False` explicitly and select `Adj Close`; do not accidentally calculate returns from raw `Close` or rely on an API default. The implementation handles a single-ticker result, including hierarchical columns. The [current download reference](https://ranaroussi.github.io/yfinance/reference/api/yfinance.download.html) documents these API options and date conventions.
-
-A raw snapshot and its metadata identify the source, retrieval time, request, actual coverage, package versions, and SHA-256 digest. Repeated runs validate and reuse that snapshot. Data-request changes require a new configured snapshot directory; a settings mismatch stops the run. There is no automatic refresh of an existing experiment's data.
-
-Before calculating returns, audit the full requested period for unordered or duplicate dates, missing/nonfinite/nonpositive adjusted prices, and missing or unexpected trading sessions. Expected daily sessions come from the `NYSE` calendar in [pandas_market_calendars](https://pandas-market-calendars.readthedocs.io/en/latest/usage.html), a documented U.S. equity schedule. Holidays are excluded; early-close sessions remain valid daily observations. A mismatch requires investigation of the provider data and calendar. The pipeline must not forward-fill a missing session, silently drop a bad price, or substitute artificial data for a failed real download.
-
-This is a retrospective adjusted-price study. Fixing the raw snapshot prevents unnoticed changes between runs, but cannot prove that all adjustment values were available on the historical forecast dates. Calendar definitions and vendor history can also change across versions. The audit and pinned environment make these choices inspectable; a genuine point-in-time dataset would be a later methodological improvement. Before distributing raw data or moving it to S3, review the data provider's applicable terms.
-
-## Chronological split and boundary rules
-
-Use forecast dates in 2015–2021 for training, 2022–2023 for validation, and 2024–2025 for the reserved final test. These proposed dates need discussion with Dr. Twumasi. Training data supplies exploratory plots and, later, fitted-model parameters. Validation supports model comparison and tuning. Final-test outcomes must not guide design choices.
-
-Let `v0` be the first actual validation forecast date. Remove every training example with `target_end >= v0`. Let `q0` be the first actual final-test forecast date. Remove every validation example with `target_end >= q0`. Evaluate these inequalities using the recorded trading dates, not a fixed number of calendar days. Save the excluded-row counts and retained date ranges in the split summary.
-
-Historical feature windows may reach backward across a split boundary because those past observations would already be available when forecasting. Future target windows must respect the purge rule. Any later scaler, imputer, or feature-selection procedure must be fitted on training data only. A focused test changes prices after a cutoff and confirms that inputs at and before that cutoff remain unchanged for the supplied price series.
-
-## Validation metrics and overlap
-
-For `n` validation forecasts, with baseline `b_t` and target `y_t` in decimal daily-volatility units:
+After trading day `t` closes, calculate its log return:
 
 ```text
-MAE  = 100 * mean(abs(b_t - y_t))
-RMSE = 100 * sqrt(mean((b_t - y_t)^2))
+r_t = ln(adjusted_close_t / adjusted_close_(t-1))
 ```
 
-Report both in daily-volatility percentage points, together with `n`. Multiplying by 100 changes units; it does not annualize the result. For example, a baseline of `0.010` and target of `0.012` differ by `0.2` percentage points.
+The baseline forecast is the **sample standard deviation of the latest 20 returns**, including today's return. Standard deviation measures variability. The historical outcome, or **target**, is the standard deviation of the next five returns:
 
-The primary evaluation uses every retained validation forecast. Adjacent targets share four of five daily returns, so their errors are dependent. The secondary evaluation begins at the first retained validation forecast and selects every fifth trading session. Verify that each selected target-end date is strictly earlier than the next selected target-start date. This produces disjoint outcome windows, while volatility persistence can still induce dependence. Report both results; do not treat the larger daily count as independent trials or choose a favorable sampling offset after inspecting scores.
+```text
+forecast_t = sample_std(r_(t-19), ..., r_t)
+target_t   = sample_std(r_(t+1), ..., r_(t+5))
+```
 
-Plots of return history and historical volatility use training data. The observed-versus-baseline comparison uses validation only. Store the final-test table for future use, while leaving all final-test performance uncomputed.
+Every standard deviation uses `ddof=1`: subtract the mean, square the differences, sum them, divide by `n-1`, and take the square root. A window of 20 returns needs 21 prices.
 
-## Reproducibility and interpretation
+These are **daily volatility** values estimated from daily returns. They are not annualized and are not cumulative five-day returns. A value of `0.01` means 1% daily return variability.
 
-Each run saves the audit, complete feature table, purged splits, predictions, plots, metrics, resolved configuration, snapshot digest, and dependency versions. The raw snapshot and generated results stay local and are ignored by Git; code, configuration, the lock file, and research notes are tracked. Reproduction requires the saved snapshot as well as the code and environment, because a future fresh Yahoo download may differ.
+Five inputs are saved for later model comparisons:
 
-A five-return sample standard deviation is a noisy realized proxy. Predicting it does not directly predict SPY's price direction or option-implied volatility. Phase 1 establishes a numerical reference for later models; it is not evidence of a trading strategy's profitability. Any empirical statements belong in [phase1_progress.md](phase1_progress.md) and must match the saved output files.
+| Input | Information used after today's close |
+| --- | --- |
+| `volatility_5`, `volatility_10`, `volatility_20` | Variability of the latest 5, 10, and 20 returns |
+| `log_return` | Today's return |
+| `momentum_5` | Sum of the latest five returns |
+
+Record the target's start and end dates. Exclude rows with incomplete history or future targets, including the final five observations. Targets judge historical forecasts; they never enter forecast inputs.
+
+## 3. Keep time periods separate
+
+| Forecast dates | Purpose |
+| --- | --- |
+| 2015-2021 | Training history; later model fitting |
+| 2022-2023 | Validation: measure and compare forecasts |
+| 2024-2025 | Reserved final test; not scored yet |
+
+Remove training rows whose target ends on or after the first actual validation forecast date. Apply the same rule between validation and test. This is called **purging**: it keeps a future outcome from crossing into the next period. Use actual trading dates, not calendar-day estimates.
+
+Inputs may use earlier observations across a boundary because those prices were already available. Any later preprocessing or model fitting must use training data only. Choose settings using validation, then fix those choices before examining test performance.
+
+## 4. Measure error
+
+For forecast `b` and observed target `y`:
+
+```text
+MAE  = 100 * mean(abs(b - y))
+RMSE = 100 * sqrt(mean((b - y)^2))
+```
+
+Both use **daily-volatility percentage points**. MAE is the average absolute error; RMSE gives large errors more weight. A difference of `0.002` in decimal volatility is `0.2` percentage points.
+
+Report all validation dates and a second sample starting at the first validation date, then taking every fifth trading session. Verify that the second sample's target windows are disjoint. Adjacent daily targets share returns, so their errors are dependent; nonoverlapping windows still do not guarantee independence.
+
+Yearly diagnostics include MAE, RMSE, count, and bias: `100 * mean(b - y)`. Positive bias means overprediction on average. These describe the same validation sample.
+
+## 5. Verify and save
+
+An independent checker recomputes every saved training/validation row using explicit NumPy slices. It checks inputs, targets, dates, purging, predictions, sampling, counts, and errors. Numerical tolerance is `1e-9` relative and `1e-12` absolute. A mismatch fails the run. Reserved test tables are not opened or scored by this checker.
+
+Each successful run saves a report, plots, CSV tables, audit, calculation checks, metrics, configuration, dependency versions, snapshot fingerprint, and source-code fingerprints. Training plots use training data; forecast-comparison plots use validation data.
+
+## Limits
+
+A five-return target is a noisy estimate of volatility. Yahoo can revise historical adjusted prices, so the fixed snapshot is reproducible but does not guarantee what was published on each historical date. Passing calculation checks does not prove forecast usefulness or trading profitability. See [baseline results](results.md) for measured performance.

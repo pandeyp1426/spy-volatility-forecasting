@@ -16,6 +16,9 @@ from uuid import uuid4
 import pandas as pd
 
 from .data import get_snapshot
+from .provenance import source_hashes
+from .reporting import write_results_report
+from .verification import verify_saved_calculations
 from .research import (
     build_features,
     evaluate_predictions,
@@ -84,12 +87,14 @@ def _plot_results(train: pd.DataFrame, predictions: pd.DataFrame, output: Path) 
     plt.close(figure)
 
 
-def run_phase1(config_path: str | Path = "configs/phase1.toml") -> dict:
+def run_phase1(config_path: str | Path = "configs/phase1.toml", *, offline: bool = False) -> dict:
     """Run validation baseline; return results or raise after saving failure details.
 
     Relative data/output paths are resolved against the config's grandparent.
     Each invocation gets a new run directory. The raw snapshot is never refreshed.
     The reserved test table is saved, but is never passed to scoring or plotting.
+    Offline mode requires a previously saved snapshot. Every successful run
+    independently verifies the saved training/validation calculations.
     """
     config_path = Path(config_path).resolve()
     config = load_config(config_path)
@@ -103,10 +108,6 @@ def run_phase1(config_path: str | Path = "configs/phase1.toml") -> dict:
         "\n".join(f"{key}=={value}" for key, value in sorted(packages.items())) + "\n",
         encoding="utf-8",
     )
-    source_hashes = {
-        str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
-        for path in sorted((root / "src" / "spy_volatility").glob("*.py"))
-    }
     record = {
         "run_id": run_id,
         "started_at_utc": now.isoformat(),
@@ -114,16 +115,17 @@ def run_phase1(config_path: str | Path = "configs/phase1.toml") -> dict:
         "config": config,
         "config_path": str(config_path),
         "config_sha256": hashlib.sha256(config_path.read_bytes()).hexdigest(),
-        "source_sha256": source_hashes,
+        "source_sha256": source_hashes(),
         "python": sys.version,
         "platform": platform.platform(),
         "package_versions": packages,
         "final_test_evaluated": False,
+        "offline": offline,
         "output_dir": str(output),
     }
     write_json(output / "run_record.json", record)
     try:
-        prices, metadata, audit = get_snapshot(config["data"], root / config["paths"]["snapshot_dir"])
+        prices, metadata, audit = get_snapshot(config["data"], root / config["paths"]["snapshot_dir"], offline=offline)
         record["snapshot_sha256"] = metadata["sha256"]
         record["snapshot_metadata"] = metadata
         write_json(output / "data_audit.json", audit)
@@ -154,16 +156,24 @@ def run_phase1(config_path: str | Path = "configs/phase1.toml") -> dict:
             "final_test": "reserved; performance not computed",
         }
         write_json(output / "metrics.json", metrics)
+        verification = verify_saved_calculations(output, prices, config, metrics)
+        write_json(output / "calculation_verification.json", verification)
         _plot_results(splits["train"], predictions, output)
+        report_path = write_results_report(output, run_id=run_id, config=config, metadata=metadata,
+                                          audit=audit, summary=summary, metrics=metrics, verification=verification)
         record["metrics"] = metrics
+        record["calculation_verification_passed"] = verification["passed"]
         record["status"] = "success"
         record["artifacts"] = sorted(path.name for path in output.iterdir())
-        return {"output_dir": str(output), "metrics": metrics, "snapshot_sha256": metadata["sha256"]}
+        return {"output_dir": str(output), "metrics": metrics, "snapshot_sha256": metadata["sha256"],
+                "calculation_verification_passed": verification["passed"], "report": str(report_path)}
     except Exception as error:
         record["status"] = "failed"
         record["error"] = {"type": type(error).__name__, "message": str(error)}
         if hasattr(error, "report"):
             write_json(output / "data_audit.json", error.report)
+        if hasattr(error, "verification_report"):
+            write_json(output / "calculation_verification.json", error.verification_report)
         (output / "error.txt").write_text(traceback.format_exc(), encoding="utf-8")
         print(f"Phase 1 failed; run record: {output / 'run_record.json'}", file=sys.stderr)
         raise

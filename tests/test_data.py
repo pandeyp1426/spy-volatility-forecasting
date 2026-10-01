@@ -190,3 +190,13 @@ def test_partial_snapshot_never_redownloads(tmp_path, monkeypatch, config):
     monkeypatch.setattr("spy_volatility.data.yf.download", forbidden_download)
     with pytest.raises(SnapshotError, match="Incomplete snapshot"):
         get_snapshot(config, tmp_path)
+
+
+def test_offline_mode_requires_snapshot_without_contacting_provider(tmp_path, monkeypatch, config):
+    def forbidden_download(**kwargs):
+        pytest.fail("Offline mode must never call Yahoo")
+
+    monkeypatch.setattr("spy_volatility.data.yf.download", forbidden_download)
+    with pytest.raises(SnapshotError, match="Offline mode requires"):
+        get_snapshot(config, tmp_path, offline=True)
+    assert not (tmp_path / "raw.csv").exists()

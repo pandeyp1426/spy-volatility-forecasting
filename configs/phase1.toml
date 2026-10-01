@@ -1,4 +1,4 @@
-# Working research choices for discussion with Dr. Augustine Twumasi.
+# SPY historical-volatility baseline.
 [data]
 ticker = "SPY"
 start = "2014-11-01" # inclusive; warm-up history
@@ -15,9 +15,9 @@ baseline_window = 20
 train_start = "2015-01-01"
 validation_start = "2022-01-01"
 test_start = "2024-01-01"
-test_end = "2026-01-01" # exclusive; reserved, not evaluated in Phase 1
+test_end = "2026-01-01" # exclusive; reserved, not evaluated
 
 [paths]
-# Relative to the repository root (the config file's parent directory's parent).
+# Paths are relative to the project root.
 snapshot_dir = "data/raw/spy_2014-11-01_2026-01-01"
 output_dir = "artifacts/runs"
