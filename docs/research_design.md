@@ -1,3 +1,7 @@
+# Study configurations
+
+The original chronological design below remains supported by `configs/phase1.toml`. The requested pooled design uses `configs/pooled.toml`, the same audited price snapshot and feature construction, a single seed-42 permutation, and separate train/validation/test identities. It fits only training rows and scores only validation. See [cumulative report source](../report/main.tex) for the current full methodology and [decision log](decision_log.md) for overlap and prior-use disclosures. The two designs have different evaluation samples.
+
 # How the forecast works
 
 **Volatility measures how much returns vary.** Large swings mean higher volatility; small swings mean lower volatility. This project forecasts that variability, not whether SPY's price will rise or fall.

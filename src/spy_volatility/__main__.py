@@ -8,8 +8,8 @@ from .pipeline import run_phase1
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run the local SPY historical-volatility baseline")
-    parser.add_argument("--config", default="configs/phase1.toml", help="Path to Phase 1 TOML configuration")
+    parser = argparse.ArgumentParser(description="Run a configured SPY validation experiment; test remains reserved")
+    parser.add_argument("--config", default="configs/phase1.toml", help="Path to chronological or pooled TOML configuration")
     parser.add_argument("--offline", action="store_true", help="Require the saved snapshot; never download data")
     arguments = parser.parse_args()
     try:

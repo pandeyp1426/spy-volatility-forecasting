@@ -1,0 +1,12 @@
+{
+  "source": "SPY_Codex_Project_Handoff.md, section 6; rounded reference values, not executable expected outputs",
+  "source_sha256": "bebddd623a159ba16ea7390db3a43be2e71010ec1c04c2edfaa471d188ba85c6",
+  "archive_available": false,
+  "raw_csv_sha256": "715749e1aa3245e9077af7e3cc71939abe1d84483fb9929b3fbe5f2d386e6607",
+  "validation": {
+    "baseline": {"mae_pp": 0.425491, "rmse_pp": 0.744811, "bias_pp": 0.066660},
+    "ridge": {"mae_pp": 0.362214, "rmse_pp": 0.631828, "bias_pp": 0.008138},
+    "random_forest": {"mae_pp": 0.347744, "rmse_pp": 0.605218, "bias_pp": 0.009418},
+    "gradient_boosting": {"mae_pp": 0.338649, "rmse_pp": 0.554954, "bias_pp": 0.018958}
+  }
+}

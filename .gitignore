@@ -13,6 +13,7 @@ dist/
 # Local data and generated experiments (source and research notes stay tracked)
 data/
 artifacts/
+output/
 *.log
 
 # Credentials and local settings

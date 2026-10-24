@@ -1,5 +1,7 @@
 # Baseline results
 
+The current pooled comparison is documented separately in [pooled development results](pooled_results.md). This page preserves the earlier chronological baseline.
+
 Verified on **2026-10-01** using the saved SPY snapshot. These results describe the historical-volatility baseline; no learned model has been fitted.
 
 ## Validation performance

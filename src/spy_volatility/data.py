@@ -34,6 +34,41 @@ class DownloadError(RuntimeError):
     """Yahoo returned no usable response; the actual provider errors are retained."""
 
 
+def audit_raw_fields(raw: pd.DataFrame) -> dict:
+    """Check unadjusted OHLC bounds and action fields without altering raw data.
+
+    Adjusted close is not compared with unadjusted high/low. These consistency
+    checks cannot establish vendor accuracy or replace cross-vendor validation.
+    """
+    report = {"passed": False, "errors": [], "cross_vendor_validated": False}
+    required = ["Open", "High", "Low", "Close", "Adj Close", "Volume", "Dividends", "Stock Splits"]
+    missing = sorted(set(required) - set(raw.columns))
+    if missing:
+        report["errors"].append(f"Missing raw fields: {missing}")
+        raise DataAuditError(report)
+    numeric = raw[required].apply(pd.to_numeric, errors="coerce")
+    if not np.isfinite(numeric.to_numpy(dtype=float)).all():
+        report["errors"].append("Nonfinite or nonnumeric raw values")
+    if (numeric[["Open", "High", "Low", "Close", "Adj Close"]] <= 0).any().any():
+        report["errors"].append("Nonpositive prices")
+    bounds = ((numeric["High"] < numeric[["Open", "Close", "Low"]].max(axis=1)) |
+              (numeric["Low"] > numeric[["Open", "Close", "High"]].min(axis=1)))
+    report["invalid_ohlc_dates"] = _date_strings(raw.index[bounds])
+    if bounds.any():
+        report["errors"].append("Unadjusted OHLC bounds violated")
+    if (numeric[["Volume", "Dividends", "Stock Splits"]] < 0).any().any():
+        report["errors"].append("Negative volume or corporate action values")
+    report["dividend_events"] = int((numeric["Dividends"] != 0).sum())
+    report["split_events"] = int((numeric["Stock Splits"] != 0).sum())
+    factors = (numeric["Adj Close"] / numeric["Close"]).to_numpy(dtype=float)
+    report["adjustment_factor_range"] = ([float(factors.min()), float(factors.max())]
+                                           if len(factors) and np.isfinite(factors).all() else None)
+    report["passed"] = not report["errors"]
+    if not report["passed"]:
+        raise DataAuditError(report)
+    return report
+
+
 def _interval(start: str, end: str) -> tuple[pd.Timestamp, pd.Timestamp]:
     for name, value in (("start", start), ("end", end)):
         if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):

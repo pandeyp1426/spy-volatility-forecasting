@@ -1,0 +1,9 @@
+{
+  "archive": "SPY_Progress_Analysis_Source.zip",
+  "archive_sha256": "7f1967fa49901676478a7c38bda341107e6756941e8d027998ce81974db187f9",
+  "members": {
+    "pilot_validation_metrics.csv": "3f8386faa4b937a13ea07bae184e699c8e44dc5b40904cc0a56b3276a5804dd8",
+    "requirements.txt": "3b62ea227d7098c9a3f1c78289b913d60328495b69dd9da1b2a59f58bd98cceb",
+    "README.md": "ea883e05ccf1da5d35bd5ce1798ec9713b95fe059fa64b5dea137a730bfe00cc"
+  }
+}

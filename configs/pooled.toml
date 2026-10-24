@@ -1,0 +1,24 @@
+# Requested pooled experiment. Preserves the phase1 chronological pilot.
+[data]
+ticker = "SPY"
+start = "2014-11-01"
+end = "2026-01-01"
+calendar = "NYSE"
+
+[research]
+windows = [5, 10, 20]
+horizon = 5
+momentum_window = 5
+baseline_window = 20
+
+[split]
+strategy = "pooled_random"
+start = "2015-01-01"
+end = "2026-01-01"
+seed = 42
+train_fraction = 0.70
+validation_fraction = 0.15
+
+[paths]
+snapshot_dir = "data/raw/spy_2014-11-01_2026-01-01"
+output_dir = "artifacts/runs"

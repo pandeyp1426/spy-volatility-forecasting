@@ -40,12 +40,25 @@ def load_config(path: Path) -> dict:
         if section not in config:
             raise ValueError(f"Missing configuration section: {section}")
     data, split, research = config["data"], config["split"], config["research"]
-    boundaries = [data["start"], split["train_start"], split["validation_start"],
-                  split["test_start"], split["test_end"], data["end"]]
+    strategy = split.get("strategy", "chronological")
+    if strategy not in ("chronological", "pooled_random"):
+        raise ValueError("Unknown split strategy")
+    boundaries = ([data["start"], split["start"], split["end"], data["end"]]
+                  if strategy == "pooled_random" else
+                  [data["start"], split["train_start"], split["validation_start"],
+                   split["test_start"], split["test_end"], data["end"]])
     dates = [pd.Timestamp(value) for value in boundaries]
-    if any(date.tzinfo is not None or date != date.normalize() for date in dates):
+    if any(pd.isna(date) or date.tzinfo is not None or date != date.normalize() for date in dates):
         raise ValueError("Use timezone-free calendar dates for configuration boundaries")
-    if not (dates[0] < dates[1] < dates[2] < dates[3] < dates[4] <= dates[5]):
+    if strategy == "pooled_random":
+        if not dates[0] < dates[1] < dates[2] <= dates[3]:
+            raise ValueError("Require data start < pooled start < pooled end <= data end")
+        if (research != {"windows": [5, 10, 20], "horizon": 5,
+                         "momentum_window": 5, "baseline_window": 20}):
+            raise ValueError("Pooled experiment requires the agreed five predictors and five-session target")
+        from .pooled import validate_split_settings
+        validate_split_settings(split["seed"], split["train_fraction"], split["validation_fraction"])
+    elif not (dates[0] < dates[1] < dates[2] < dates[3] < dates[4] <= dates[5]):
         raise ValueError("Require data start < train < validation < test < test end <= data end")
     if not data["ticker"] or not data["calendar"]:
         raise ValueError("A ticker and trading calendar are required")
@@ -98,6 +111,9 @@ def run_phase1(config_path: str | Path = "configs/phase1.toml", *, offline: bool
     """
     config_path = Path(config_path).resolve()
     config = load_config(config_path)
+    if config["split"].get("strategy") == "pooled_random":
+        from .pooled import run_pooled
+        return run_pooled(config_path, config, offline=offline)
     root = config_path.parent.parent
     now = datetime.now(timezone.utc)
     run_id = now.strftime("%Y%m%dT%H%M%S") + "_" + uuid4().hex[:8]
@@ -136,7 +152,8 @@ def run_phase1(config_path: str | Path = "configs/phase1.toml", *, offline: bool
             (examples.index >= config["split"]["train_start"])
             & (examples.index < config["split"]["test_end"])
         ].copy()
-        splits, summary = split_examples(examples, **config["split"])
+        split_settings = {key: value for key, value in config["split"].items() if key != "strategy"}
+        splits, summary = split_examples(examples, **split_settings)
         examples.to_csv(output / "features.csv", index_label="forecast_date")
         for name, frame in splits.items():
             filename = "test_reserved.csv" if name == "test" else f"{name}.csv"
