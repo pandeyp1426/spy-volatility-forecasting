@@ -110,6 +110,11 @@ def run_phase1(config_path: str | Path = "configs/phase1.toml", *, offline: bool
     independently verifies the saved training/validation calculations.
     """
     config_path = Path(config_path).resolve()
+    with config_path.open("rb") as stream:
+        requested = tomllib.load(stream)
+    if requested.get("experiment", {}).get("strategy") == "retrospective_temporal":
+        from .next_phase import run_next_phase
+        return run_next_phase(config_path, offline=offline)
     config = load_config(config_path)
     if config["split"].get("strategy") == "pooled_random":
         from .pooled import run_pooled

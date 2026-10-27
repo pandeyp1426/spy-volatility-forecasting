@@ -19,6 +19,9 @@ from uuid import uuid4
 import pandas as pd
 
 from .models import MODEL_NAMES, TARGET_COLUMN
+from .next_phase_report import (validate_pooled_narrative, pooled_content,
+                                validate_development, development_content, absent_development,
+                                register_content)
 
 
 def sha(path):
@@ -39,7 +42,8 @@ def table(path, headers, rows, alignment):
     path.write_text("\n".join(lines)+"\n", encoding="utf-8")
 
 
-def prepare_report(run_dir: Path, root: Path, report_date: str | None = None) -> tuple[Path, dict]:
+def prepare_report(run_dir: Path, root: Path, report_date: str | None = None,
+                   development_run: Path | None = None) -> tuple[Path, dict]:
     run_dir, root = Path(run_dir).resolve(), Path(root).resolve()
     edition = date.fromisoformat(report_date) if report_date else datetime.now(ZoneInfo("America/Chicago")).date()
     record = json.loads((run_dir/"run_record.json").read_text(encoding="utf-8"))
@@ -52,13 +56,19 @@ def prepare_report(run_dir: Path, root: Path, report_date: str | None = None) ->
             or record["config"]["data"]["start"] != "2014-11-01"
             or record["config"]["data"]["end"] != "2026-01-01"):
         raise ValueError("This report narrative requires the agreed 2015-2025 study period")
-    required = ["validation_metrics.csv", "split_summary.json", "eda_summary.json", "data_audit.json",
+    required = ["validation_metrics.csv", "validation_predictions.csv", "split_summary.json", "eda_summary.json", "data_audit.json",
                 "model_record.json", "tables/training_pearson.csv", "tables/training_spearman.csv",
                 "tables/session_lag_correlations.csv", "tables/validation_high_volatility.csv"]
     required += [f"figures/{name}.pdf" for name in ("training_distribution", "training_scatter", "training_history", "training_dependence")]
     for name in required:
         if record.get("artifact_sha256", {}).get(name) != sha(run_dir/name):
             raise ValueError(f"Run artifact hash mismatch: {name}")
+    model = json.loads((run_dir/"model_record.json").read_text())
+    summary = json.loads((run_dir/"split_summary.json").read_text())
+    audit = json.loads((run_dir/"data_audit.json").read_text())
+    validate_pooled_narrative(record, model, summary, audit)
+    development_record = (validate_development(Path(development_run), run_dir, record)
+                          if development_run is not None else None)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f")
     build = root/"output/pdf/builds"/f"{edition.isoformat()}_{record['run_id']}_{stamp}"
     build.mkdir(parents=True, exist_ok=False)
@@ -67,6 +77,10 @@ def prepare_report(run_dir: Path, root: Path, report_date: str | None = None) ->
     (build/"figures").mkdir()
     for name in ("main.tex", "references.bib"):
         shutil.copy2(root/"report"/name, build/name)
+    generator_dir = build/"report_generator"
+    generator_dir.mkdir()
+    for name in ("weekly_report.py", "next_phase_report.py"):
+        shutil.copy2(Path(__file__).parent/name, generator_dir/name)
     for name in required:
         if name.startswith("figures/"):
             shutil.copy2(run_dir/name, build/name)
@@ -107,6 +121,14 @@ def prepare_report(run_dir: Path, root: Path, report_date: str | None = None) ->
           [[names[n], f"{metrics.loc[n,'mae_pp']-reference['validation'][n]['mae_pp']:+.6f}",
             f"{metrics.loc[n,'rmse_pp']-reference['validation'][n]['rmse_pp']:+.6f}"] for n in MODEL_NAMES], "lrr")
     lag = pd.read_csv(run_dir/"tables/session_lag_correlations.csv")
+    pooled_content(run_dir, generated, metrics, eda, pearson, spearman, lag, summary, audit)
+    absent_development(generated)
+    development_inputs = []
+    if development_record is not None:
+        development_inputs = development_content(Path(development_run), generated, build, development_record)
+        register_content(Path(development_run), generated, build, development_record)
+    else:
+        (generated/"register.tex").write_text("No development register selected for this edition.\n", encoding="utf-8")
     macros = {"ReportDate": edition.strftime("%d %B %Y"), "RunID": record["run_id"],
               "SourceCommit": record.get("source_git",{}).get("commit","unavailable")[:12],
               "SnapshotHash": record["snapshot_sha256"],
@@ -132,22 +154,30 @@ def prepare_report(run_dir: Path, root: Path, report_date: str | None = None) ->
                 "inputs": {name: sha(run_dir/name) for name in required},
                 "historical_archive_sha256": historical_manifest["archive_sha256"],
                 "handoff_reference_sha256": sha(ref_path)}
+    manifest["report_generator_sha256"] = {p.name: sha(p) for p in generator_dir.glob("*.py")}
+    if development_record is not None:
+        manifest["development_run_id"] = development_record["run_id"]
+        manifest["development_run_dir"] = str(Path(development_run).resolve())
+        manifest["development_run_record_sha256"] = sha(Path(development_run)/"run_record.json")
+        manifest["development_inputs"] = {name: sha(Path(development_run)/name) for name in development_inputs}
     manifest["build_input_sha256"] = {p.relative_to(build).as_posix(): sha(p) for p in build.rglob("*") if p.is_file()}
     (build/"build_record.json").write_text(json.dumps(manifest, indent=2)+"\n", encoding="utf-8")
     return build, manifest
 
 
-def build_report(run_dir, *, root=None, report_date=None, compiler=None, render=False):
+def build_report(run_dir, *, root=None, report_date=None, compiler=None, render=False, development_run=None):
     root = Path(root) if root else Path(__file__).resolve().parents[2]
-    build, manifest = prepare_report(Path(run_dir), root, report_date)
+    build, manifest = prepare_report(Path(run_dir), root, report_date, development_run)
     executable = compiler or shutil.which("tectonic") or str(root/".tools/tectonic/tectonic.exe")
     command = [str(executable), "--keep-logs", "main.tex"]
     result = subprocess.run(command, cwd=build, capture_output=True, text=True)
     (build/"compiler_output.txt").write_text(result.stdout+result.stderr, encoding="utf-8")
     if result.returncode or not (build/"main.pdf").is_file():
+        manifest.update(status="compile_failed", compiler_command=command, compiler_exit_code=result.returncode)
+        (build/"build_record.json").write_text(json.dumps(manifest, indent=2)+"\n", encoding="utf-8")
         raise RuntimeError(f"LaTeX failed; inspect {build / 'compiler_output.txt'}")
     output = root/"output/pdf"
-    dated = output/f"SPY_Research_Report_{manifest['report_date']}_{manifest['run_id']}.pdf"
+    dated = output/f"SPY_Research_Report_{manifest['report_date']}_{manifest.get('development_run_id', manifest['run_id'])}.pdf"
     if dated.exists() and sha(dated) != sha(build/"main.pdf"):
         dated = output/f"{dated.stem}_{build.name.rsplit('_',1)[-1]}.pdf"
     shutil.copy2(build/"main.pdf", dated)
@@ -178,11 +208,12 @@ def build_report(run_dir, *, root=None, report_date=None, compiler=None, render=
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", required=True, type=Path)
+    parser.add_argument("--development-run", type=Path, help="Named verified retrospective temporal run using --run as its pooled parent")
     parser.add_argument("--date", help="Edition date YYYY-MM-DD; default America/Chicago today")
     parser.add_argument("--compiler", help="Tectonic executable")
     parser.add_argument("--render", action="store_true", help="Render every PDF page for visual review")
     args = parser.parse_args()
-    print(json.dumps(build_report(args.run, report_date=args.date, compiler=args.compiler, render=args.render), indent=2))
+    print(json.dumps(build_report(args.run, report_date=args.date, compiler=args.compiler, render=args.render, development_run=args.development_run), indent=2))
 
 
 if __name__ == "__main__":

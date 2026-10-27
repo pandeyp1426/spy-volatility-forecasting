@@ -4,7 +4,7 @@ This project estimates how much SPY's daily returns will vary over the next five
 
 **Load prices → check data → calculate forecasts → compare with what happened → save results.**
 
-The project now includes a fixed pooled 2015–2025 comparison of Ridge, Random Forest and gradient boosting against the baseline. The earlier chronological baseline is preserved as a separate experiment. Both paths leave their test subsets unscored.
+The project includes the pooled 2015–2025 comparison and a completed retrospective temporal robustness analysis with annual 2020–2025 folds, nested tuning and a fixed feature ablation. The earlier chronological pilot is preserved. The pooled reserved test identities remain excluded from every new fit, tuning and scored diagnostic.
 
 The newer EDA research archive was unavailable. The integrated run uses the original cached yfinance snapshot and does not claim exact reproduction of that missing archive.
 
@@ -20,6 +20,17 @@ Run from the folder containing `pyproject.toml`:
 Replace `RUN_ID` with the printed run folder. The report requires Tectonic and optional PDF-rendering dependencies; see [report build instructions](report/README.md). The stable source is [report/main.tex](report/main.tex); dated/current PDFs are saved under `output/pdf/`. The [pooled notebook](notebooks/pooled.ipynb) invokes the same pipeline.
 
 The exact split is one NumPy seed-42 permutation: floor 70% training, floor 15% validation, remainder testing. Rows are disjoint, but outcome returns overlap across subsets: this is a pooled comparison, not a leakage-free future forecasting test. Test data are structurally audited and reserved, never predicted or scored. See [decisions and discrepancies](docs/decision_log.md).
+
+## Completed temporal development phase
+
+The named pooled run is a required local input. The temporal command always uses the frozen snapshot offline and creates a new run directory:
+
+```powershell
+.\.venv\Scripts\python.exe -m spy_volatility --config configs/temporal.toml --offline
+.\.venv\Scripts\python.exe -m spy_volatility.weekly_report --run artifacts/runs/20261024T163643_pooled_b62233b3 --development-run artifacts/runs/20261027T001114_temporal_4bf4a071 --render
+```
+
+The second command rebuilds the completed edition from saved results; replace its development run ID to report a new run. See [temporal results](docs/temporal_results.md) for exact evidence and limitations. Fixed Ridge improves aggregate RMSE over both window benchmarks; the fixed tree models do not. Tuning gains are small and tail failures remain. This is retrospective development on reused history, not a pristine final test.
 
 ## Preserved chronological baseline
 
@@ -68,6 +79,10 @@ See [pooled results](docs/pooled_results.md) for the current comparison, [how it
 | --- | --- |
 | `configs/phase1.toml` | Preserved chronological pilot |
 | `configs/pooled.toml` | Requested pooled experiment |
+| `configs/temporal.toml` | Frozen annual development and nested search protocol |
+| `src/spy_volatility/temporal.py`, `next_phase.py` | Annual folds, fixed comparison, comparator, tuning and ablation |
+| `src/spy_volatility/diagnostics.py`, `next_phase_verification.py` | Separate pooled/temporal diagnostics and independent arithmetic checks |
+| `src/spy_volatility/experiment_register.py` | Complete local run register and artifact index |
 | `src/spy_volatility/pooled.py` | Exact split, overlap audits and offline comparison |
 | `src/spy_volatility/models.py`, `eda.py` | Fixed regressions and training-only EDA |
 | `report/main.tex`, `src/spy_volatility/weekly_report.py` | Cumulative source and weekly PDF build |
@@ -89,4 +104,4 @@ Run the tests:
 
 If you change the ticker, download dates, or calendar, choose a new `snapshot_dir` in the config. Existing snapshots are never silently replaced. Use only runs whose `run_record.json` says `success`; failed runs may contain partial files and an `error.txt` explaining the problem.
 
-Next: predeclare the dates, data roles and boundary purge for a separately named temporal robustness analysis. The current pooled test must not be silently reused for tuning. No routine command evaluates a final test.
+Next, proposed only: freeze a separately reserved future-period protocol and justify a dependence-aware uncertainty analysis. Large-outcome underprediction and unstable annual errors deserve attention before expanding the model collection. No future period was downloaded or scored, and no routine command evaluates a final test.

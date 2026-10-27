@@ -2,6 +2,18 @@
 
 The original chronological design below remains supported by `configs/phase1.toml`. The requested pooled design uses `configs/pooled.toml`, the same audited price snapshot and feature construction, a single seed-42 permutation, and separate train/validation/test identities. It fits only training rows and scores only validation. See [cumulative report source](../report/main.tex) for the current full methodology and [decision log](decision_log.md) for overlap and prior-use disclosures. The two designs have different evaluation samples.
 
+## Completed retrospective temporal design
+
+`configs/temporal.toml` adds a third, separately named development analysis. It preserves the pooled map and removes its 415 reserved IDs. In each outer year 2020–2025, training expands from 2015 and retains labels only when `target_end <= fit_cutoff`, where the cutoff is the preceding year's last actual price session. Evaluation uses permitted forecast dates in the outer year. Models fit once per year; earlier evaluation observations can enter later fits when their labels are available.
+
+The same rule applies to three earlier annual inner folds for each outer fit. Inner evaluation labels must also be known by the outer cutoff. Each family selects the candidate with lowest RMSE over concatenated inner predictions; exact ties choose the lowest frozen candidate ID. All transforms fit on the applicable training rows. Reserved IDs create gaps, so folds and plots retain original session timestamps rather than compressing rows.
+
+The declared sequence is unchanged fixed models, the unfitted 5-session comparator alongside the 20-session baseline, the 26-candidate nested grid, then a fixed three-volatility-predictor ablation. All variants use identical outer scoring observations. High/low diagnostics use the current training target's 95th percentile and group by realized outcome; they are ex-post, not operational forecast rules. Fitted training errors are descriptive.
+
+Metrics use `e = 100 * (prediction - observed)`: MAE is mean absolute error, MSE is mean squared error in pp², RMSE is its square root in pp, and bias is mean signed error. Overall metrics concatenate observations; averaging annual RMSE is incorrect. MSE and RMSE rank identical samples identically and are not independent confirmations.
+
+See [measured temporal results](temporal_results.md). This reused history includes years formerly reserved in the older chronological pilot; the pilot's original output remains unscored and preserved, but those calendar years can no longer be described as untouched for the overall project. The current formal reservation is the saved pooled test identities, which remain unscored. Neither identity exclusion nor timestamp ordering removes shared underlying returns or prior historical exposure. A separately frozen future evaluation remains proposed.
+
 # How the forecast works
 
 **Volatility measures how much returns vary.** Large swings mean higher volatility; small swings mean lower volatility. This project forecasts that variability, not whether SPY's price will rise or fall.

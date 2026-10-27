@@ -1,32 +1,22 @@
 \documentclass[10pt,letterpaper]{article}
 \usepackage[margin=0.72in,headheight=15pt]{geometry}
 \usepackage[T1]{fontenc}
-\usepackage{lmodern,microtype,amsmath,booktabs,tabularx,array,graphicx,caption,xcolor,fancyhdr,titlesec,xurl}
+\usepackage{lmodern,microtype,amsmath,booktabs,tabularx,longtable,array,graphicx,caption,xcolor,fancyhdr,titlesec,xurl}
 \usepackage[colorlinks=true,linkcolor=teal,citecolor=teal,urlcolor=teal]{hyperref}
-\definecolor{ink}{HTML}{17374A}
-\definecolor{teal}{HTML}{146C80}
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{4pt}
-\renewcommand{\arraystretch}{1.08}
+\definecolor{ink}{HTML}{17374A}\definecolor{teal}{HTML}{146C80}
+\setlength{\parindent}{0pt}\setlength{\parskip}{4pt}\renewcommand{\arraystretch}{1.08}
 \titleformat{\section}{\Large\bfseries\color{ink}}{\thesection}{0.6em}{}
 \titleformat{\subsection}{\normalsize\bfseries\color{ink}}{}{0em}{}
-\titlespacing*{\section}{0pt}{7pt}{8pt}
-\titlespacing*{\subsection}{0pt}{8pt}{3pt}
+\titlespacing*{\section}{0pt}{7pt}{8pt}\titlespacing*{\subsection}{0pt}{8pt}{3pt}
 \captionsetup{font=small,labelfont=bf,skip=4pt}
-\pagestyle{fancy}
-\fancyhf{}
-\lhead{\small SPY volatility forecasting}
-\rhead{\small Cumulative research report}
-\cfoot{\small\thepage}
-\renewcommand{\headrulewidth}{0.3pt}
+\pagestyle{fancy}\fancyhf{}\lhead{\small SPY volatility forecasting}\rhead{\small Cumulative research report}
+\cfoot{\small\thepage}\renewcommand{\headrulewidth}{0.3pt}
 \newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
-\newcommand{\code}[1]{\texttt{\small #1}}
-\newcommand{\sd}{\operatorname{sd}}
+\newcommand{\code}[1]{\texttt{\small #1}}\newcommand{\sd}{\operatorname{sd}}
 \input{generated/macros.tex}
 \hypersetup{pdftitle={SPY Volatility Forecasting: Cumulative Research Report},pdfauthor={Pradeep Pandey}}
-\begin{document}
-\thispagestyle{empty}
-{\small\color{teal}\textbf{INDEPENDENT STUDY / WEEKLY RESEARCH EDITION}}
+\begin{document}\thispagestyle{empty}
+{\small\color{teal}\textbf{INDEPENDENT STUDY / CUMULATIVE RESEARCH EDITION}}
 
 {\LARGE\bfseries\color{ink} Machine Learning for Short-Term\\[3pt] SPY Volatility Forecasting}
 
@@ -34,310 +24,286 @@ Pradeep Pandey \textbar\ University of Wisconsin--Stout\\
 Faculty supervisor: Dr. Augustine Twumasi \textbar\ \ReportDate
 
 \section{Introduction and motivation}
-Can a small regression model use information available after today's close to
-forecast the variability of SPY's daily returns over the next five trading
-sessions more accurately than a recent historical-volatility benchmark?
+Can information available after today's close predict the standard deviation of
+SPY's daily returns over the next five trading sessions better than a recent
+historical-volatility benchmark?
 
-The project studies volatility regression. Its contribution is a transparent
-comparison with a fixed target, a reproducible dataset, a simple benchmark, and
-an explicit account of what the evaluation can establish. Price levels and
-up/down classification are outside the current research question.
+This is volatility regression: the object of interest is return variability,
+rather than the price level or price direction. Forecasting variability can
+inform risk measurement; accuracy must be demonstrated on a defined sample and
+cannot be inferred from model complexity. This study does not evaluate a trading strategy.
 
 SPY seeks to track the S\&P 500's price and yield performance before expenses
-\cite{spy}. A single broad equity instrument keeps the independent study
-manageable while retaining the market variability that motivates forecasting.
-The relevant information set ends at the close of session $t$; the daily return
-ending at that close is available to the forecaster.
+\cite{spy}. One broad equity instrument keeps the semester study manageable
+while retaining substantial return variation. These instrument properties
+motivate the case study; they do not establish forecasting performance.
 
 \subsection{Current research stage}
-This edition integrates the requested pooled 2015--2025 comparison into the
-existing Python project and verifies it offline using the original cached
-Yahoo Finance snapshot. The chronological pilot remains historical context.
-The newer research archive described in the handoff is unavailable, so its
-results are reference values rather than an exactly reproduced run. The
-\TestCount{} pooled test rows are reserved and unscored. This is a completed
-development-stage comparison, not a final evaluation of future performance.
+\input{generated/stage.tex}
+The original snapshot is preserved. The separate newer archive described in the
+handoff is unavailable; its rounded results remain historical reference values,
+not an exactly reproduced dataset. The \TestCount{} pooled reserved rows have
+not received test predictions or scores.
 
-\section{Literature review}
-\textbf{Measurement.} Standard deviation quantifies spread around a mean in
-the units of the observations. Squared deviations make it sensitive to extremes
-\cite{nist}. Normality is not required to calculate it. Here it is an interpretable,
-but noisy, proxy computed from only five future daily returns. It does not
-directly reveal latent conditional volatility.
+\section{Related research}
+\textbf{Measurement.} Standard deviation summarizes spread in observation units.
+Squaring deviations gives extremes substantial influence \cite{nist}. The
+five-return target is interpretable but noisy; it does not directly measure
+latent conditional volatility. This limitation exists regardless of the algorithm.
 
-\textbf{Multiple horizons.} Corsi's HAR-RV framework models volatility components
-at different horizons \cite{corsi}. This motivates retaining short and longer
-historical windows. Our 5-, 10-, and 20-session sample standard deviations are
-computed from daily returns; this study is not a canonical HAR-RV replication.
+\textbf{Multiple horizons.} Corsi's HAR-RV framework combines volatility
+components at different horizons \cite{corsi}. It motivates short and longer
+historical windows. Our 5-, 10-, and 20-session standard deviations of daily
+returns are not a canonical HAR-RV replication or intraday realized variance.
 
-\textbf{Model comparisons.} Breiman's Random Forests combine randomized tree
-predictors \cite{breiman}, offering a nonlinear alternative to a regularized
-linear model. Christensen, Siggaard, and Veliyev compare machine learning with
-HAR models in a realized-variance setting \cite{christensen}. Their evidence
-motivates a controlled comparison; their intraday measurement and application
-differ from this five-daily-return target, so their reported gains cannot be
-transferred to SPY here.
+\textbf{Statistical and machine-learning comparisons.} Breiman's Random Forests
+combine randomized tree predictors \cite{breiman}, motivating a nonlinear
+comparison with regularized linear regression. Christensen, Siggaard, and Veliyev
+compare machine-learning and HAR models for realized variance \cite{christensen}.
+Their measurement and application differ from this five-daily-return SD target;
+their gains cannot be transferred to the present SPY sample.
 
-\textbf{Evaluation.} Time-series observations can remain related across randomly
-selected subsets. Scikit-learn's evaluation guidance recommends considering
-temporal ordering when estimating future generalization \cite{cv}. We retain the
-professor's requested random split and explicitly measure its overlap.
+\textbf{Temporal evaluation.} Scikit-learn distinguishes ordered forecast
+evaluation from random folds \cite{cv,temporal_api}. Its row-count gap cannot
+replace actual target-end checks when reserved rows create irregular spacing.
+The annual folds and bounded search grid below are project choices recorded
+before scoring, not prescriptions attributed to these sources.
 
-\newpage
-\section{Data and variables}
-\subsection{One preserved snapshot}
-The current source is Yahoo Finance through \code{yfinance}, with daily SPY,
-start 1 November 2014 inclusive, end 1 January 2026 exclusive, and
-\code{auto\_adjust=False}. Returns use the explicit \code{Adj Close} field.
+\clearpage\section{Data and variables}
+\subsection{Preserved acquisition and consistency checks}
+Daily SPY observations came from Yahoo Finance through \code{yfinance}, with
+start 1 November 2014 inclusive, end 1 January 2026 exclusive and
+\code{auto\_adjust=False}; returns use the explicit \code{Adj Close} field.
 The snapshot contains \RawCount{} observations, 3 November 2014--31 December
-2025. Its original acquisition time is retained in UTC; no new prices were
-downloaded for this edition. The handoff's unavailable snapshot came through
-Yahoo's chart endpoint directly, not an execution of \code{yfinance}.
+2025. Acquisition UTC and its hash appear in the provenance appendix. The
+unavailable handoff snapshot used Yahoo's chart endpoint directly; these
+acquisition methods and snapshots are not interchangeable.
 
-The calendar audit passes for all expected NYSE sessions. Dates are unique,
-ordered, timezone-free session labels; prices are positive and finite. Raw
-unadjusted OHLC bounds and corporate-action fields pass internal checks
+The quality audit checks ordered unique session dates, positive finite adjusted
+prices, expected NYSE sessions, unadjusted OHLC bounds and corporate actions
 (\DividendCount{} dividend events; \SplitCount{} split events). Adjusted close
-is not compared with unadjusted high/low. Holidays are not missing sessions and
-early closes remain observations. No absent-session prices are forward-filled;
-no genuine extreme returns are removed. These checks do not independently
-establish Yahoo price accuracy; cross-vendor validation has not been performed.
+is not compared with unadjusted high and low. Holidays are not missing sessions;
+early closes remain observations. No absent-session price is filled and no
+genuine extreme return is removed to improve scores.
+\begin{center}\input{generated/cleaning.tex}\end{center}
+The table explains how raw observations become complete model rows. Initial
+history, unavailable final outcomes and complete rows outside the study period
+are distinct exclusions. These checks establish internal consistency and calendar
+coverage, not independent Yahoo price accuracy. Cross-vendor validation and
+point-in-time verification of historical adjustments remain absent.
 
-\subsection{Definitions and information timing}
-Let $P_t$ denote adjusted close at actual trading session $t$, and
-$r_t=\log(P_t/P_{t-1})$. All standard deviations use $\mathrm{ddof}=1$.
-Stored values are decimals: $0.01=1\%$.
-
-\begin{tabularx}{\linewidth}{@{}L{1.7in}L{2.5in}X@{}}
-\toprule
-Column & Exact definition & Role\\
-\midrule
+\subsection{Definitions and after-close information}
+Let $P_t$ be adjusted close at original trading session $t$, and
+$r_t=\log(P_t/P_{t-1})$. Forecasting occurs after session $t$ closes, so $r_t$ is
+available. Stored model values are decimals: $0.01=1\%$.
+\begin{tabularx}{\linewidth}{@{}L{1.7in}L{2.5in}X@{}}\toprule
+Column & Definition & Role\\\midrule
 \code{log\_return} & $r_t$ & Predictor\\
 \code{volatility\_5} & $\sd(r_{t-4},\ldots,r_t)$ & Predictor\\
 \code{volatility\_10} & $\sd(r_{t-9},\ldots,r_t)$ & Predictor\\
 \code{volatility\_20} & $\sd(r_{t-19},\ldots,r_t)$ & Predictor and benchmark\\
 \code{momentum\_5} & $\sum_{j=0}^{4}r_{t-j}=\log(P_t/P_{t-5})$ & Predictor\\
-\code{future\_volatility\_5d} & $\sd(r_{t+1},\ldots,r_{t+5})$ & Response only\\
-\bottomrule
+\code{future\_volatility\_5d} & $\sd(r_{t+1},\ldots,r_{t+5})$ & Response only\\\bottomrule
 \end{tabularx}
 
-In particular,
+For $n$ returns $u_1,\ldots,u_n$, sample SD is
+$s=\sqrt{\sum_{j=1}^n(u_j-\bar u)^2/(n-1)}$. Deviations measure distance from
+the mean; squares avoid cancellation and emphasize extremes. The $n-1$
+denominator is the sample-variance convention; the square root restores return
+units. It does not make sample SD unbiased for population SD. Every window uses
+\code{ddof=1}. Specifically,
 \[
- \bar r_{t,+}=\frac{1}{5}\sum_{j=1}^{5}r_{t+j},\qquad
- y_t=\sqrt{\frac{1}{4}\sum_{j=1}^{5}(r_{t+j}-\bar r_{t,+})^2}.
+\bar r_{t,+}=\frac15\sum_{j=1}^5r_{t+j},\qquad
+ y_t=\sqrt{\frac14\sum_{j=1}^5(r_{t+j}-\bar r_{t,+})^2}.
 \]
-The response is \textbf{daily-return volatility measured over five future
-sessions}. It is neither annualized volatility nor the volatility of a
-cumulative five-day return. The square root restores return units; the short
-window and sensitivity to extremes limit its precision as a volatility proxy.
+The response is daily-return variability within five future sessions, not
+annualized volatility or the SD of cumulative five-day returns. Calculating SD
+requires no normality assumption; five observations make it noisy and sensitive
+to extremes.
 
-\subsection{Construction and audit metadata}
-Returns and every rolling window are calculated on the full ordered price
-history before random assignment. Twenty returns require 21 prices; the 2014
-history provides warm-up for 2015 forecasts. Requiring complete inputs and
-outcomes leaves \EligibleCount{} eligible forecasts, 2 January 2015--23 December
-2025. The final five 2025 forecast dates lack complete outcomes and are excluded.
+\subsection{Construction and metadata}
+All windows are calculated on the ordered full price history before splitting.
+Twenty returns require 21 prices; 2014 supplies warm-up. There are
+\EligibleCount{} complete forecasts, 2 January 2015--23 December 2025; the final
+five 2025 dates lack complete outcomes. An explicit five-column allowlist defines
+$X$. The legacy \code{target} maps to the same response; duplicate
+\code{baseline} is not a sixth predictor. Row ID, original session number,
+forecast date and target start/end remain metadata. Independent calculations
+verify window alignment against the preserved prices.
 
-The model uses an explicit five-column predictor allowlist. The legacy response
-column \code{target} retains the same meaning under its new name,
-\code{future\_volatility\_5d}. The duplicate \code{baseline} is excluded from $X$.
-Forecast date, original session
-number, row ID, and target start/end dates remain linked metadata. Independent
-NumPy slices verify all saved training and validation windows against raw prices.
-
-\newpage
-\section{Exploratory data analysis}
-All figures and correlations in this section use only the \TrainingCount{}
-training rows from the designated pooled run. The target median is
-\TargetMedian\%, its mean \TargetMean\%, its 95th percentile \TargetUpper\%,
-and its maximum \TargetMaximum\%. The right tail matters for forecast errors;
-rare large values are retained as part of the research problem.
-
+\clearpage\section{Exploratory data analysis}
+\subsection{Distribution and association}
+How common are large future-volatility outcomes? The histogram and empirical CDF
+use only the \TrainingCount{} saved pooled training rows. Median volatility is
+\TargetMedian\%, mean \TargetMean\%, 95th percentile \TargetUpper\%, and
+maximum \TargetMaximum\%. The mean above the median and long upper range show
+asymmetry: a small upper tail can disproportionately affect squared errors. The
+percentile describes this sample, not a future regime's frequency; extremes remain.
 \begin{center}
 \includegraphics[width=0.80\linewidth]{figures/training_distribution.pdf}
-\captionof{figure}{Training target distribution in daily-volatility percent. The
-full observed range is retained; the cumulative plot shows the tail's size.}
+\captionof{figure}{Pooled training target histogram and empirical CDF, in daily-volatility percent; the full range is retained.}
 \end{center}
-\begin{center}
-\input{generated/correlations.tex}
-\end{center}
-Recent volatility is positively associated with the future target. The 5- and
-10-session predictors correlate at \FeatureCorrelation{}, showing substantial
-shared information. Correlation describes association, not forecast accuracy or
-causation. These descriptive results motivate comparing models with the same
-predictors; they do not justify an automatic feature deletion.
-
+\begin{center}\input{generated/correlations.tex}\end{center}
+\input{generated/association_interpretation.tex}
 \begin{center}
 \includegraphics[width=0.76\linewidth]{figures/training_scatter.pdf}
-\captionof{figure}{Five predictors versus the response. All axes use percent
-units; points are training observations. No iid significance tests are claimed.}
+\captionof{figure}{Five predictors against the future target on pooled training observations; all axes use percent units.}
 \end{center}
+The scatterplots ask whether a feature determines the outcome or only shifts its
+distribution. Positive volatility associations coexist with substantial vertical
+spread and sparse large outcomes; negative return/momentum associations do not
+constitute a directional trading rule. This motivates linear and nonlinear
+forecasts and tail diagnostics; held-out error determines usefulness. Neither
+scatter nor correlation is causal evidence.
 
-\newpage
-\subsection{History and serial dependence}
-The historical view places sampled observations on their actual dates. Large
-return movements and elevated volatility cluster in time. Short future-window
-dispersion can move sharply even when the 20-session benchmark changes more
-slowly. A pooled sample contains several market conditions, but this fact alone
-does not establish performance on an unseen later period.
-
+\clearpage\subsection{History and dependence}
+Does variability remain constant? The date plot places training observations on
+actual sessions and shows concentrations of larger return magnitudes and
+volatility alongside quieter periods. Future-window SD can move sharply while
+20-session history changes more slowly. These observations motivate annual and
+tail diagnostics; the plot identifies neither a causal event nor performance on
+a new period.
 \begin{center}
 \includegraphics[width=0.88\linewidth]{figures/training_history.pdf}
-\captionof{figure}{Training observations only, on actual forecast dates. Points
-avoid implying that adjacent retained rows are consecutive trading sessions.}
+\captionof{figure}{Pooled training returns and volatility on actual dates. Points avoid treating retained rows as consecutive sessions.}
 \end{center}
-
 \begin{center}
 \includegraphics[width=0.82\linewidth]{figures/training_dependence.pdf}
-\captionof{figure}{Descriptive lag correlations. A pair is included only if both
-endpoints are training rows separated by the stated number of original sessions.}
+\captionof{figure}{Correlations at true original-session lags; both endpoints must be pooled training rows.}
 \end{center}
-Pair counts range from \LagPairMin{} to \LagPairMax{} across the reported lags;
-the exact count is saved for every variable and lag. The randomized training
-subset is never compressed into a fictitious daily sequence. Dependence and
-overlapping target windows preclude ordinary independent-observation significance
-claims. The target itself shares returns at short lags by construction.
+\input{generated/dependence_interpretation.tex}
+Pair counts range from \LagPairMin{} to \LagPairMax{} across plotted lags. No
+compressed-subset autocorrelation or independent-row significance test is used.
+Pooled EDA is descriptive context; outer-fold outcomes do not select temporal parameters.
 
-\newpage
-\section{Methodology}
-\subsection{Requested pooled design}
-The eligible rows are ordered chronologically, then permuted once using
-NumPy's default random generator, seed 42:
-\begin{center}\code{np.random.default\_rng(42).permutation(N)}\end{center}
-The first
-$\lfloor0.70N\rfloor$ rows train the models, the next
-$\lfloor0.15N\rfloor$ validate them, and the remainder form the reserved test
-subset. There is no stratification or seed search. This gives
-\TrainingCount{} / \ValidationCount{} / \TestCount{} rows. Exact membership is
-saved; sorting within subsets does not change identities.
+\clearpage\section{Methods}
+\subsection{Preserved pooled design and its limits}
+Chronologically ordered eligible identities are permuted once using
+\code{np.random.default\_rng(42).permutation(N)}. The first
+$\lfloor0.70N\rfloor$ train, the next $\lfloor0.15N\rfloor$ validate and the
+remainder are reserved without stratification: \TrainingCount{} /
+\ValidationCount{} / \TestCount{} rows. Saved memberships are retained. The
+chronological pilot and professor-requested pooled experiment are distinct. The
+handoff's single permutation superseded the older proposed two-call split recipe,
+which assigns different identities.
 
-The October 14 pilot used chronological partitions. The requested pooled
-experiment is now a separate configuration built from the complete snapshot.
-The handoff's single-permutation rule supersedes the older report's proposed
-two-call \code{train\_test\_split} recipe, which would assign different rows.
-
-\subsection{Overlap and prior-use limitations}
-Adjacent targets share four of their five returns. The table counts held-out
-rows whose future-return windows intersect any training target window or any
-training feature window. It uses session metadata only, not test response values.
-
+Adjacent targets share four of five returns. The overlap table counts held-out
+outcome windows intersecting any training outcome or feature window; it uses
+metadata, not reserved response values.
 \begin{center}\input{generated/overlap.tex}\end{center}
+Pooled scores measure a historical random-holdout comparison. Disjoint identities
+do not imply separated information: later training features can contain earlier
+held-out outcome returns. Some 2015--2023 history was used before reservation,
+so this is not a never-seen research sample.
 
-Disjoint row IDs therefore do not give a leakage-free future forecasting
-evaluation. Later training features also contain returns from earlier held-out
-outcomes. The reported scores are a \textbf{pooled-period random-holdout
-comparison}, with information overlap, rather than a demonstration of future-only
-performance. Some 2015--2023 history was inspected in earlier work: creating a
-new reserved subset cannot make it a never-before-seen research sample.
-
-\subsection{Fixed algorithms and preprocessing}
-The benchmark predicts $\hat y_t=\mathrm{volatility\_20}_t$. The fitted models
-use the same five predictors and the same training and validation identities.
-
-\begin{tabularx}{\linewidth}{@{}L{1.25in}X@{}}
-\toprule Model & Fixed specification\\\midrule
-Ridge & StandardScaler fitted only on training rows, then Ridge with $\alpha=1$.\\
-Random Forest & 200 trees; maximum depth 5; minimum leaf 10; \code{max\_features="sqrt"}; seed 42; one job.\\
-Gradient boosting & 200 trees; depth 2; learning rate 0.03; minimum leaf 10; squared-error loss; seed 42.\\
-\bottomrule
+\subsection{Fixed algorithms and suitability}
+The benchmark predicts $\hat y_t=\mathrm{volatility\_20}_t$. All fitted models
+use identical permitted rows and the predictor allowlist.
+\begin{tabularx}{\linewidth}{@{}L{1.2in}X@{}}\toprule
+Model & Fixed specification and fitting\\\midrule
+Ridge & Training-only StandardScaler; $\alpha=1$. Squared residual sum plus an $L_2$ coefficient penalty.\\
+Random Forest & 200 trees, depth 5, minimum leaf 10, \code{max\_features="sqrt"}, seed 42, one job. Bootstrap trees use squared-error split reduction and leaf means; predictions average the trees.\\
+Gradient boosting & 200 trees, depth 2, rate 0.03, minimum leaf 10, seed 42. Stagewise trees fit loss gradients with squared-error loss.\\\bottomrule
 \end{tabularx}
 
-No tuning search is performed. Predictions have a prespecified zero floor;
-\FloorCount{} validation predictions required flooring. This run uses
-scikit-learn \SklearnVersion{}; full package versions and source hashes are saved.
+These mechanisms match the pinned implementation \cite{ridge_api,forest_api,boosting_api}.
+A prespecified zero floor follows prediction; \FloorCount{} pooled validation
+predictions required it. The pooled run uses scikit-learn \SklearnVersion{};
+versions and exact settings accompany each run. No search selected the original
+pooled specifications.
 
-\subsection{Evaluation}
-For errors $e_i=100(\hat y_i-y_i)$, MAE is $n^{-1}\sum|e_i|$, RMSE is
-$\sqrt{n^{-1}\sum e_i^2}$, and bias is $n^{-1}\sum e_i$. Units are
-\textbf{daily-volatility percentage points (pp)}. Every model is scored on the
-same \ValidationCount{} validation rows. High-volatility validation rows use the
-training target's 95th percentile as a fixed descriptive threshold. The normal
-analysis and report commands never predict or score the reserved test subset.
+Suitability concerns the continuous target, available information, structure,
+dependence and error diagnostics. Normal predictors or response are not required
+for Ridge point prediction or tree prediction. Gaussian assumptions concern some
+inference procedures, not permission to forecast. Ridge supplies a regularized
+linear reference; trees permit nonlinear structure but can miss sparse extremes.
+No transformation is imposed simply to pass a normality test.
 
-\newpage
-\section{Results and discussion}
-\subsection{Current pooled validation run}
-\begin{center}\input{generated/validation.tex}\end{center}
-All three fitted models improve aggregate MAE and RMSE over the benchmark in
-this comparison. Gradient boosting has the lowest aggregate errors, but this
-single dependent validation sample does not establish a final winner. No test
-performance or statistical significance is claimed.
+\subsection{Fitting, selection and evaluation}
+For $e_i=100(\hat y_i-y_i)$, define
+\[
+\mathrm{MAE}=n^{-1}\sum|e_i|,\quad \mathrm{MSE}=n^{-1}\sum e_i^2,\quad
+\mathrm{RMSE}=\sqrt{\mathrm{MSE}},\quad \mathrm{bias}=n^{-1}\sum e_i.
+\]
+MAE summarizes typical absolute error; RMSE gives large misses greater influence.
+Bias describes direction but opposing errors can cancel. MAE, RMSE and bias use
+daily-volatility percentage points (pp); MSE uses squared pp \cite{mse_api}.
+MSE and RMSE rank identical rows and weights identically, not as independent
+confirmations. Main scores remain MAE, RMSE and bias; saved MSE diagnostics use
+full-precision predictions.
 
-\begin{center}\input{generated/high_volatility.tex}\end{center}
-For validation targets at or above the training 95th percentile
-(\TargetUpper\% daily volatility), all learned models underpredict on average.
-Lower aggregate error therefore coexists with a weakness on larger-volatility
-observations. Bias and conditional errors should accompany aggregate scores.
+\textit{Hypothetical example:} target $0.010$, prediction $0.012$ gives $+0.2$ pp
+error and $0.04$ squared pp squared error, not a stock-return forecast or a claim
+of 20\% forecast accuracy. Fitting loss, inner RMSE selection and reported outer
+metrics have separate roles. RMSE penalizes large misses in both directions,
+not underprediction specifically.
+\input{generated/development_methods.tex}
 
-\subsection{Reconciliation with the separate handoff analysis}
-The following differences are current scores minus the handoff's six-decimal
-reference scores; they are descriptive comparisons, not test tolerances.
-\begin{center}\input{generated/discrepancies.tex}\end{center}
-The count and split protocol agree. Baseline and Ridge are close to the quoted
-values, with small tree-model differences. The cached CSV hash and acquisition
-method differ from the missing archive. Different CSV schemas alone change a
-hash without proving price changes; adjusted-price revisions, floating-point
-inputs, and library versions may also affect fitted trees. Without the archive,
-the exact contributions cannot be isolated. No data or parameters were changed
-to force agreement, and exact archive reproduction is not claimed.
-
-\subsection{Historical chronological pilot, retained separately}
+\clearpage\section{Experiments and results}
+\subsection{Historical chronological pilot}
 \begin{center}\small\input{generated/historical.tex}\end{center}
-These preserved October 14 results used 1,758 training and 496 validation rows
-on the earlier chronological split. The learned pilot models were OLS and a
-forest with \code{max\_features=1.0}, not the current Ridge and forest
-specifications. Their archived scores are retained, not presented as a new
-execution. The original repository baseline was rerun offline for this edition
-and reproduces its 0.3462 MAE and 0.4664 RMSE (pp). Its fixed every-fifth check
-has 100 rows, MAE 0.3577 and RMSE 0.4663. Different validation samples prevent
-direct ranking of the chronological and pooled scores.
+The preserved 14 October archive used 1,758 training and 496 validation rows.
+Its OLS and forest (\code{max\_features=1.0}) differ from current specifications.
+These are archived results, not new executions in this edition. They preserve
+earlier evidence; differing dates and settings prevent direct ranking against pooled scores.
 
-\newpage
-\section{Conclusion and future work}
-The project now has one integrated, offline-reproducible pooled development
-experiment with explicit definitions, a verified snapshot, training-only
-preprocessing and EDA, saved split identities, and a common model comparison.
-The learned models reduce aggregate validation errors, while high-volatility
-underprediction and cross-partition information overlap limit the conclusion.
-The test subset remains reserved and unscored.
+\subsection{Preserved pooled comparison}
+\begin{center}\input{generated/validation.tex}\end{center}
+\input{generated/pooled_interpretation.tex}
+\begin{center}\input{generated/high_volatility.tex}\end{center}
+\input{generated/pooled_tail_interpretation.tex}
+\input{generated/development_results.tex}
 
-\subsection{Next research stage: temporal robustness, not yet executed}
-A separately named chronological or walk-forward experiment is the next
-methodological decision. Before execution, specify exact fit cutoffs, validation
-dates, permitted row roles, refit frequency, and boundary exclusions. At each
-fit cutoff $c$, every training label must satisfy $\mathrm{target\_end}\le c$;
-evaluation forecast dates must follow the declared fitting time. If outcomes
-must also be disjoint across folds, purge rows whose outcome intervals intersect
-the next evaluation interval. A row-count gap alone should not replace these
-timestamp checks.
+\clearpage\section{Discussion}
+\input{generated/development_discussion.tex}
+\subsection{What remains uncertain}
+Only five returns form each noisy response. Shared windows create dependence
+even within temporal evaluation. Historical reuse and underlying-return overlap
+remain after protected identities are removed. These prevent pristine
+out-of-sample or ordinary iid significance claims. Lower mean error need not
+mean reliable performance during large-volatility episodes. Internal checks do
+not validate another vendor's prices or establish profitable trading.
 
-The pooled reserved rows must not silently become tuning data for that study.
-Because parts of the history have already informed development and pooled
-training includes later years, a temporal reanalysis of this history would be
-robustness evidence, not a newly untouched test. Agree its dates and roles with
-the supervisor before running it. The final test remains outside routine weekly
-updates; model selection, any small ablation, and the reporting protocol must be
-fixed before a separately authorized final evaluation.
+\section{Conclusion and next milestone}
+\input{generated/development_conclusion.tex}
+The question, snapshot, target and reserved test role remain stable across
+editions. Conclusions follow saved predictions and comparable samples. Further
+work should address observed errors through a bounded hypothesis and agreed
+evaluation role before execution. This edition adds no new indicators, target
+transformations, neural networks or future-period scores.
 
-\subsection{Cumulative reporting and reproducibility}
-One stable LaTeX source is updated as evidence accumulates. Numerical tables
-are generated from saved CSV/JSON outputs, and all EDA figures refer to the
-same identified pooled run. Dated and current PDFs are built from the same
-source bundle. The decision log outside the main narrative records changes
-without turning each weekly edition into a new research direction.
+\begingroup\small\bibliographystyle{plain}\bibliography{references}\endgroup
+\clearpage\appendix
+\input{generated/development_appendix.tex}
+\input{generated/register.tex}
+\section{Snapshot reconciliation and report reproduction}
+Differences below are preserved pooled scores minus the handoff's six-decimal
+references: descriptive differences, not acceptance tolerances or exact reproduction.
+\begin{center}\input{generated/discrepancies.tex}\end{center}
+The cached CSV hash and acquisition method differ from the missing archive.
+Schemas alone change hashes without proving price changes. Price revisions,
+floating-point inputs and library versions can affect trees. Without that archive,
+contributions cannot be isolated; no parameters or data were changed to force agreement.
 
-{\footnotesize
-\textbf{Edition provenance.} \ReportDate{} (America/Chicago).
-Pooled run: \texttt{\RunID}. Source base commit: \texttt{\SourceCommit}
-with local integration changes; exact executing source hashes and working-tree
-status are retained in the run record. Acquisition UTC: \texttt{\SnapshotTime}.
-Snapshot SHA-256:\\
-{\scriptsize\texttt{\SnapshotHash}}.
-The report build record links generated tables and figures to their input hashes.
-Original supplied materials are preserved separately.}
+\subsection{Edition provenance and build bundle}
+\ReportDate{} (America/Chicago). Pooled run: \texttt{\RunID}.
+Pooled source base commit: \texttt{\SourceCommit}; executing source hashes and
+working-tree status are retained. Acquisition UTC: \texttt{\SnapshotTime}.
+Snapshot SHA-256:\\{\scriptsize\texttt{\SnapshotHash}}.
 
-\begingroup\small
-\bibliographystyle{plain}
-\bibliography{references}
-\endgroup
+The stable source is \code{report/main.tex}. Tables use named records and
+predictions. Pooled EDA uses that run's training rows; pooled and temporal error
+plots retain distinct identities. The build record hashes inputs, sources and
+PDFs. Dated editions and bundles are preserved; successful new builds update the
+current PDF. Every rendered page requires visual review beyond compiler success.
+
+From the repository root, with the installed environment and preserved artifacts:
+\begin{quote}\small\ttfamily
+python -m spy\_volatility.weekly\_report --run POOLED\_RUN\\
+\hspace*{1em}--development-run TEMPORAL\_RUN --date YYYY-MM-DD --render
+\end{quote}
+Replace both path tokens with directories named in the build record. Exact
+offline analysis commands and prerequisites are in \code{report/README.md} and
+the saved configuration. The report command performs no fitting and never loads
+the reserved response matrix. This task produces no slides or scheduled publication.
 \end{document}
