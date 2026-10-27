@@ -14,7 +14,7 @@ Use the `output_dir` printed by the first command. The date defaults to America/
 To rebuild the completed cumulative edition with temporal results:
 
 ```powershell
-.\.venv\Scripts\python.exe -m spy_volatility.weekly_report --run artifacts/runs/20261024T163643_pooled_b62233b3 --development-run artifacts/runs/20261027T001114_temporal_4bf4a071 --date 2026-10-26 --render
+.\.venv\Scripts\python.exe -m spy_volatility.weekly_report --run artifacts/runs/20261024T163643_pooled_b62233b3 --development-run artifacts/runs/20261027T001114_temporal_4bf4a071 --date 2026-10-27 --render
 ```
 
 To execute the frozen temporal analysis again, run `.\.venv\Scripts\python.exe -m spy_volatility --config configs/temporal.toml --offline` and select its new run folder in the report command. Required local inputs are the intact `data/raw/spy_2014-11-01_2026-01-01` snapshot and the named pooled parent folder, including its saved split map, training/validation tables, predictions, metrics, figures and provenance. They are ignored local artifacts, not downloadable GitHub links. A fresh download cannot replace the snapshot silently.

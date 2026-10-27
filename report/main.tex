@@ -96,6 +96,7 @@ point-in-time verification of historical adjustments remain absent.
 Let $P_t$ be adjusted close at original trading session $t$, and
 $r_t=\log(P_t/P_{t-1})$. Forecasting occurs after session $t$ closes, so $r_t$ is
 available. Stored model values are decimals: $0.01=1\%$.
+\par\noindent
 \begin{tabularx}{\linewidth}{@{}L{1.7in}L{2.5in}X@{}}\toprule
 Column & Definition & Role\\\midrule
 \code{log\_return} & $r_t$ & Predictor\\
@@ -105,6 +106,7 @@ Column & Definition & Role\\\midrule
 \code{momentum\_5} & $\sum_{j=0}^{4}r_{t-j}=\log(P_t/P_{t-5})$ & Predictor\\
 \code{future\_volatility\_5d} & $\sd(r_{t+1},\ldots,r_{t+5})$ & Response only\\\bottomrule
 \end{tabularx}
+\par
 
 For $n$ returns $u_1,\ldots,u_n$, sample SD is
 $s=\sqrt{\sum_{j=1}^n(u_j-\bar u)^2/(n-1)}$. Deviations measure distance from
@@ -131,7 +133,7 @@ $X$. The legacy \code{target} maps to the same response; duplicate
 forecast date and target start/end remain metadata. Independent calculations
 verify window alignment against the preserved prices.
 
-\clearpage\section{Exploratory data analysis}
+\section{Exploratory data analysis}
 \subsection{Distribution and association}
 How common are large future-volatility outcomes? The histogram and empirical CDF
 use only the \TrainingCount{} saved pooled training rows. Median volatility is
@@ -139,16 +141,16 @@ use only the \TrainingCount{} saved pooled training rows. Median volatility is
 maximum \TargetMaximum\%. The mean above the median and long upper range show
 asymmetry: a small upper tail can disproportionately affect squared errors. The
 percentile describes this sample, not a future regime's frequency; extremes remain.
-\begin{center}
+\begin{center}\begin{minipage}{0.98\linewidth}\centering
 \includegraphics[width=0.80\linewidth]{figures/training_distribution.pdf}
 \captionof{figure}{Pooled training target histogram and empirical CDF, in daily-volatility percent; the full range is retained.}
-\end{center}
+\end{minipage}\end{center}
 \begin{center}\input{generated/correlations.tex}\end{center}
 \input{generated/association_interpretation.tex}
-\begin{center}
-\includegraphics[width=0.76\linewidth]{figures/training_scatter.pdf}
+\begin{center}\begin{minipage}{0.98\linewidth}\centering
+\includegraphics[width=0.88\linewidth]{figures/training_scatter.pdf}
 \captionof{figure}{Five predictors against the future target on pooled training observations; all axes use percent units.}
-\end{center}
+\end{minipage}\end{center}
 The scatterplots ask whether a feature determines the outcome or only shifts its
 distribution. Positive volatility associations coexist with substantial vertical
 spread and sparse large outcomes; negative return/momentum associations do not
@@ -156,21 +158,21 @@ constitute a directional trading rule. This motivates linear and nonlinear
 forecasts and tail diagnostics; held-out error determines usefulness. Neither
 scatter nor correlation is causal evidence.
 
-\clearpage\subsection{History and dependence}
+\subsection{History and dependence}
 Does variability remain constant? The date plot places training observations on
 actual sessions and shows concentrations of larger return magnitudes and
 volatility alongside quieter periods. Future-window SD can move sharply while
 20-session history changes more slowly. These observations motivate annual and
 tail diagnostics; the plot identifies neither a causal event nor performance on
 a new period.
-\begin{center}
+\begin{center}\begin{minipage}{0.98\linewidth}\centering
 \includegraphics[width=0.88\linewidth]{figures/training_history.pdf}
 \captionof{figure}{Pooled training returns and volatility on actual dates. Points avoid treating retained rows as consecutive sessions.}
-\end{center}
-\begin{center}
+\end{minipage}\end{center}
+\begin{center}\begin{minipage}{0.98\linewidth}\centering
 \includegraphics[width=0.82\linewidth]{figures/training_dependence.pdf}
 \captionof{figure}{Correlations at true original-session lags; both endpoints must be pooled training rows.}
-\end{center}
+\end{minipage}\end{center}
 \input{generated/dependence_interpretation.tex}
 Pair counts range from \LagPairMin{} to \LagPairMax{} across plotted lags. No
 compressed-subset autocorrelation or independent-row significance test is used.
@@ -254,7 +256,7 @@ earlier evidence; differing dates and settings prevent direct ranking against po
 \input{generated/pooled_tail_interpretation.tex}
 \input{generated/development_results.tex}
 
-\clearpage\section{Discussion}
+\section{Discussion}
 \input{generated/development_discussion.tex}
 \subsection{What remains uncertain}
 Only five returns form each noisy response. Shared windows create dependence
@@ -272,8 +274,9 @@ work should address observed errors through a bounded hypothesis and agreed
 evaluation role before execution. This edition adds no new indicators, target
 transformations, neural networks or future-period scores.
 
-\begingroup\small\bibliographystyle{plain}\bibliography{references}\endgroup
+\clearpage\begingroup\small\bibliographystyle{plain}\bibliography{references}\endgroup
 \clearpage\appendix
+\renewcommand{\arraystretch}{0.95}\setlength{\parskip}{2pt}
 \input{generated/development_appendix.tex}
 \input{generated/register.tex}
 \section{Snapshot reconciliation and report reproduction}
@@ -288,7 +291,8 @@ contributions cannot be isolated; no parameters or data were changed to force ag
 \subsection{Edition provenance and build bundle}
 \ReportDate{} (America/Chicago). Pooled run: \texttt{\RunID}.
 Pooled source base commit: \texttt{\SourceCommit}; executing source hashes and
-working-tree status are retained. Acquisition UTC: \texttt{\SnapshotTime}.
+working-tree status are retained. Acquisition UTC:\\
+\texttt{\SnapshotTime}.
 Snapshot SHA-256:\\{\scriptsize\texttt{\SnapshotHash}}.
 
 The stable source is \code{report/main.tex}. Tables use named records and

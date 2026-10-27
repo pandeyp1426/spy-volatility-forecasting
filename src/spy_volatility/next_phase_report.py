@@ -174,6 +174,8 @@ def development_content(run_dir, generated, build, record):
     tail = tail[(tail.aggregation == "aggregate") & (tail.tail_group == "at_or_above_training_q95")]
     gaps = pd.read_csv(run_dir/"tables/diagnostic_temporal_gap.csv")
     gaps = gaps[gaps.aggregation == "aggregate"]
+    pooled_gaps = pd.read_csv(run_dir/"tables/diagnostic_pooled_gap.csv")
+    pooled_gaps = pooled_gaps[pooled_gaps.aggregation == "aggregate"]
     comps = pd.read_csv(run_dir/"tables/diagnostic_temporal_comparisons.csv")
     lookup = aggregate.set_index(["variant", "model"])
     def score(variant, model, key="rmse_pp"):
@@ -185,7 +187,7 @@ def development_content(run_dir, generated, build, record):
     for name in required:
         if name.startswith("figures/"):
             shutil.copy2(run_dir/name, build/name)
-    write(generated/"stage.tex", tex(f"This edition adds a completed retrospective temporal development comparison, controlled nested tuning, a 5-session comparator, and a fixed feature ablation to the preserved pooled and chronological work. Temporal run: {record['run_id']}. ") + "All reserved pooled row identities remain excluded from new fitting, selection and scored diagnostics. The final test remains unscored.")
+    write(generated/"stage.tex", "This edition adds a completed retrospective temporal development comparison, controlled nested tuning, a 5-session comparator, and a fixed feature ablation to the preserved pooled and chronological work. Temporal run: "+r"\path{"+record['run_id']+"}. All reserved pooled row identities remain excluded from new fitting, selection and scored diagnostics. The pooled final test remains unscored.")
     table(generated/"temporal_folds.tex", ["Year", "Fit cutoff", "Train $N$", "Eval. $N$", "Boundary exclusions"], [[int(r.outer_fold), r.fit_cutoff, int(r.n_train), int(r.n_evaluation), int(r.n_boundary_excluded)] for r in folds.itertuples()], "llrrr")
     methods = r"""\subsection{Retrospective temporal development protocol}
 The temporal experiment is a separately named robustness check, not a replacement
@@ -201,6 +203,9 @@ sizes. Boundary exclusions are based on dates, not a compressed row-count gap.
 Excluding reserved identities preserves their formal role but does not undo the
 underlying-return overlap or previous use of this historical period. This is
 retrospective development evidence, not a pristine final or prospective test.
+The old chronological pilot's reserved 2024--2025 period remains unscored in that
+pilot, but permitted pooled-development rows in those years are used here; those
+calendar years are therefore no longer untouched for the project as a whole.
 
 \subsection{Controlled improvement experiments}
 The fixed specifications are evaluated first. Next, the unfitted 5-session
@@ -215,12 +220,12 @@ appropriate. Neither outer outcomes nor reserved rows select transformations or
 parameters. The primary selection metric is RMSE on concatenated inner predictions;
 exact ties use the lower preassigned candidate ID. Label availability, rather than a generic row-count gap, is enforced \cite{temporal_api}. This choice and the following
 26-candidate grid were frozen before scoring, not attributed to the professor.
-\begin{tabularx}{\linewidth}{@{}lX@{}}\toprule
+\par\noindent\begin{tabularx}{\linewidth}{@{}lX@{}}\toprule
 Family & Search space\\\midrule
 Ridge & $\alpha\in\{0.01,0.1,1,10,100\}$; training-only scaling.\\
 Random Forest & Depth $\{3,5,8\}\times$ minimum leaf $\{5,10,20\}$; other fixed settings retained.\\
 Gradient boosting & Trees $\{100,200\}\times$ learning rate $\{0.03,0.05\}\times$ depth $\{1,2,3\}$; other fixed settings retained.\\\bottomrule
-\end{tabularx}
+\end{tabularx}\par
 A separate fixed-setting ablation uses only the three volatility predictors.
 It estimates the incremental predictive contribution of return and momentum on
 the same temporal rows; it does not establish causation or combine favorable
@@ -252,25 +257,29 @@ post-hoc choices into an independent result.
     result += tex(f"The same {summary['n_evaluation_rows']} outer development forecasts are scored for every variant. "+". ".join(gains)+". ")
     result += "Positive relative improvement denotes lower error. Scores pool squared errors before taking the square root; annual RMSE values are not averaged. Pooled and temporal samples differ, so differences in absolute scores do not isolate one causal effect.\n"
     result += "\\subsection{Nested tuning and fixed feature ablation}\n\\begin{center}\\small\\input{generated/temporal_changes.tex}\\end{center}\n"
-    result += tex(". ".join(tuning)+". ")+"A negative change in pp indicates a lower error; tuning is judged on untouched outer predictions relative to the fixed setting in the same family.\n\n"
+    result += tex(". ".join(tuning)+". ")+"A negative change in pp indicates a lower error; tuning is judged on outer evaluation predictions relative to the fixed setting in the same family.\n\n"
     result += tex(". ".join(ablation)+". ")+"A positive difference favors retaining return and momentum; a negative difference favors the simpler feature set in this retrospective comparison. The full settings and annual scores remain in the appendices and saved artifacts.\n"
     write(generated/"development_results.tex", result)
     table(generated/"temporal_tail.tex", ["Variant and model", "$N$", "MAE (pp)", "RMSE (pp)", "Bias (pp)"], metric_rows(tail, True), "lrrrr")
     table(generated/"temporal_gap.tex", ["Variant and model", "Fitted RMSE", "Development RMSE", "Gap (pp)"], [[r.variant.replace("_"," ")+": "+NAMES[r.model], fmt(r.training_rmse_pp), fmt(r.development_rmse_pp), fmt(r.gap_rmse_pp,True)] for r in gaps.itertuples()], "lrrr")
+    table(generated/"pooled_gap.tex", ["Model", "Fitted RMSE", "Validation RMSE", "Gap (pp)"], [[NAMES[r.model], fmt(r.training_rmse_pp), fmt(r.development_rmse_pp), fmt(r.gap_rmse_pp,True)] for r in pooled_gaps.itertuples()], "lrrr")
     fixed_tail = tail[tail.variant == "fixed"]
     under = fixed_tail[fixed_tail.model.isin(LEARNED) & (fixed_tail.bias_pp < 0)]
     best = aggregate.loc[aggregate.rmse_pp.idxmin()]
     tail_lookup = tail.set_index(["variant","model"])
     best_tail = tail_lookup.loc[(best.variant,best.model)]
     base_tail = tail_lookup.loc[("fixed","baseline")]
+    comparator_tail = tail_lookup.loc[("comparator","baseline_5")]
+    worsened_tail = [NAMES[m] for m in LEARNED if tail_lookup.loc[("tuned",m),"rmse_pp"] > tail_lookup.loc[("fixed",m),"rmse_pp"]]
     discussion = "\\subsection{What the temporal diagnostics show}\n"
     discussion += tex(f"The lowest aggregate temporal RMSE is {best.rmse_pp:.4f} pp for {best.variant.replace('_',' ')} {NAMES[best.model]}. Its high-volatility RMSE is {best_tail.rmse_pp:.4f} pp, compared with {base_tail.rmse_pp:.4f} pp for the 20-session baseline. {len(under)} of three fixed learned models underpredict the high group on average. ")
+    discussion += tex(f"The 5-session comparator's high-group RMSE is {comparator_tail.rmse_pp:.4f} pp. Tuning worsens high-group RMSE for {', '.join(worsened_tail) if worsened_tail else 'none of the learned families'} compared with its fixed counterpart. ")
     discussion += "The high group uses the training target's 95th percentile separately in each annual fold. It is defined ex post from observed outcomes, not available at forecast time. Empty groups are shown as unavailable.\n\\begin{center}\\small\\input{generated/temporal_tail.tex}\\end{center}\n"
     discussion += "\\begin{center}\\small\\input{generated/temporal_gap.tex}\\end{center}\nFitted scores describe each training fit; they are not held-out validation. Aggregation repeats observations reused in later expanding fits, so these gaps combine overfitting and differences in periods and target distributions. A larger gap alone does not identify a cause.\n"
-    discussion += "\\clearpage\n\\subsection{Temporal prediction diagnostics}\nThe identity-line scatter asks whether the models capture large observed outcomes. The date view and signed errors locate departures on actual sessions. Only the fixed comparison is displayed here; all variants have separately saved figures. Points do not connect gaps left by reserved identities. These retrospective plots support error diagnosis, not explanations based on unobserved news events.\n"
-    discussion += "\\begin{center}\\includegraphics[width=0.97\\linewidth]{figures/diagnostic_temporal_fixed_scatter.pdf}\\captionof{figure}{Fixed temporal development predictions against observed volatility; diagonal denotes equality.}\\end{center}\n"
-    discussion += "\\begin{center}\\includegraphics[width=0.96\\linewidth]{figures/diagnostic_temporal_fixed_history.pdf}\\captionof{figure}{Fixed temporal predictions and outcomes on actual forecast dates; no line bridges omitted observations.}\\end{center}\n"
-    discussion += "\\clearpage\n\\begin{center}\\includegraphics[width=0.9\\linewidth,height=0.78\\textheight,keepaspectratio]{figures/diagnostic_temporal_fixed_errors.pdf}\\captionof{figure}{Signed error by actual date and predicted level; zero indicates no error. Negative values identify underprediction.}\\end{center}\n"
+    discussion += "\\subsection{Temporal prediction diagnostics}\nThe identity-line scatter asks whether the models capture large observed outcomes. The date view and signed errors locate departures on actual sessions. Only the fixed comparison is displayed here; all variants have separately saved figures. Points do not connect gaps left by reserved identities. These retrospective plots support error diagnosis, not explanations based on unobserved news events.\n"
+    discussion += "\\begin{center}\\begin{minipage}{0.98\\linewidth}\\centering\\includegraphics[width=0.97\\linewidth]{figures/diagnostic_temporal_fixed_scatter.pdf}\\captionof{figure}{Fixed temporal development predictions against observed volatility; diagonal denotes equality.}\\end{minipage}\\end{center}\n"
+    discussion += "\\begin{center}\\begin{minipage}{0.98\\linewidth}\\centering\\includegraphics[width=0.96\\linewidth]{figures/diagnostic_temporal_fixed_history.pdf}\\captionof{figure}{Fixed temporal predictions and outcomes on actual forecast dates; no line bridges omitted observations.}\\end{minipage}\\end{center}\n"
+    discussion += "\\begin{center}\\begin{minipage}{0.98\\linewidth}\\centering\\includegraphics[width=0.9\\linewidth,height=0.72\\textheight,keepaspectratio]{figures/diagnostic_temporal_fixed_errors.pdf}\\captionof{figure}{Signed error by actual date and predicted level; zero indicates no error. Negative values identify underprediction.}\\end{minipage}\\end{center}\n"
     write(generated/"development_discussion.tex", discussion)
     positive = sum(score("fixed",m) < score("fixed","baseline") for m in LEARNED)
     tuned_better = sum(score("tuned",m) < score("fixed",m) for m in LEARNED)
@@ -287,11 +296,10 @@ post-hoc choices into an independent result.
     appendix = "\\section{Extended development results}\n\\subsection{Relative errors on identical observations}\nPositive gains mean improvement over the named window benchmark; the fold count shows stability, not significance.\\par\n\\small\\input{generated/temporal_comparisons.tex}\\normalsize\n\\subsection{Nested selections}\nInner scores select settings within each outer training period. They are not the outer evaluation scores.\\par\n\\small\\input{generated/chosen_parameters.tex}\\normalsize\n"
     appendix += tex(f"Search recorded {summary['n_search_candidates_scored']} outer-family candidate evaluations, {summary['n_fit_failures']} fit failures and {summary['elapsed_seconds']:.1f} seconds of experiment compute time. ")+"Full candidate predictions, failures and elapsed times are saved, including candidates not selected.\n"
     appendix += "\\subsection{Annual development errors}\nAll errors below are daily-volatility pp. Small per-year samples and overlapping labels limit annual comparisons.\\par\n\\small\\input{generated/temporal_year.tex}\\normalsize\n"
-    appendix += "\\clearpage\\section{Pooled validation diagnostic figures}\nThese figures reuse the named pooled validation predictions, independently of the temporal sample. The high-group table in the main results identifies underprediction; these plots locate and characterize it without introducing a causal explanation.\n"
+    appendix += "\\section{Pooled validation diagnostics}\nThe newly fitted training errors below are descriptive in-sample errors; validation values reuse the original saved pooled predictions. The difference is a generalization gap on this dependent random split, not proof of its cause.\\par\n\\begin{center}\\input{generated/pooled_gap.tex}\\end{center}\nThese figures reuse the named pooled validation predictions, independently of the temporal sample. The high-group table in the main results identifies underprediction; these plots locate and characterize it without introducing a causal explanation.\n"
     for kind, caption in (("scatter","Observed versus predicted pooled daily volatility; the identity line marks perfect agreement."),("history","Pooled validation predictions on actual forecast dates; gaps are not joined."),("errors","Pooled validation signed errors against actual dates and predicted levels.")):
-        appendix += "\\begin{center}\\includegraphics[width=0.93\\linewidth,height=0.73\\textheight,keepaspectratio]{figures/diagnostic_pooled_"+kind+".pdf}\\captionof{figure}{"+caption+"}\\end{center}\n"
-        if kind != "errors": appendix += "\\clearpage\n"
-    appendix += "\\clearpage\\section{Development run provenance}\n"
+        appendix += "\\begin{center}\\begin{minipage}{0.98\\linewidth}\\centering\\includegraphics[width=0.88\\linewidth,height=0.68\\textheight,keepaspectratio]{figures/diagnostic_pooled_"+kind+".pdf}\\captionof{figure}{"+caption+"}\\end{minipage}\\end{center}\n"
+    appendix += "\\section{Development run provenance}\n"
     appendix += tex(f"Run {record['run_id']}; source base commit {record.get('source_git',{}).get('commit','unavailable')}; selected pooled parent {record['source_pooled_run_id']}. ")+"The build record hashes both run records and all source artifacts. Exact code hashes include executing local changes rather than treating the base commit as the complete implementation.\n"
     write(generated/"development_appendix.tex", appendix)
     return required
