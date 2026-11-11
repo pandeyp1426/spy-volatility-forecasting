@@ -112,6 +112,9 @@ def run_phase1(config_path: str | Path = "configs/phase1.toml", *, offline: bool
     config_path = Path(config_path).resolve()
     with config_path.open("rb") as stream:
         requested = tomllib.load(stream)
+    if requested.get("experiment", {}).get("strategy") == "temporal_sensitivity":
+        from .sensitivity import run_sensitivity
+        return run_sensitivity(config_path)
     if requested.get("experiment", {}).get("strategy") == "retrospective_temporal":
         from .next_phase import run_next_phase
         return run_next_phase(config_path, offline=offline)

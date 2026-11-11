@@ -8,6 +8,16 @@ The project includes the pooled 2015–2025 comparison and a completed retrospec
 
 The newer EDA research archive was unavailable. The integrated run uses the original cached yfinance snapshot and does not claim exact reproduction of that missing archive.
 
+## Temporal sensitivity checks
+
+The next development phase rescores the saved temporal forecasts with outcomes contained within their forecast year and with nonoverlapping five-session outcome windows. It reports all five original-session offsets, with offset zero fixed as primary, and their intersections with annual containment. Existing model fits, training thresholds and reserved identities are preserved.
+
+```powershell
+.\.venv\Scripts\python.exe -m spy_volatility --config configs/sensitivity.toml --offline
+```
+
+This command requires the named local temporal run, always operates offline, and writes a fresh run with `results.md`, complete annual/tail tables, identity masks, source hashes and independent calculation verification. See the [protocol](docs/sensitivity_protocol.md) and [sensitivity results](docs/sensitivity_results.md). This remains retrospective development; disjoint outcome windows do not establish independent errors or statistical significance. The existing cumulative PDF still describes the earlier completed temporal phase.
+
 ## Current pooled experiment and cumulative report
 
 Run from the folder containing `pyproject.toml`:
@@ -80,6 +90,8 @@ See [pooled results](docs/pooled_results.md) for the current comparison, [how it
 | `configs/phase1.toml` | Preserved chronological pilot |
 | `configs/pooled.toml` | Requested pooled experiment |
 | `configs/temporal.toml` | Frozen annual development and nested search protocol |
+| `configs/sensitivity.toml`, `src/spy_volatility/sensitivity.py` | Annual containment and global modulo-five rescoring of saved development predictions |
+| `src/spy_volatility/sensitivity_verification.py` | Independent subset, overlap and full-precision metric audit |
 | `src/spy_volatility/temporal.py`, `next_phase.py` | Annual folds, fixed comparison, comparator, tuning and ablation |
 | `src/spy_volatility/diagnostics.py`, `next_phase_verification.py` | Separate pooled/temporal diagnostics and independent arithmetic checks |
 | `src/spy_volatility/experiment_register.py` | Complete local run register and artifact index |

@@ -1,0 +1,15 @@
+# Frozen before sensitivity scores: rescore existing development predictions only.
+[experiment]
+strategy = "temporal_sensitivity"
+name = "annual_containment_and_nonoverlapping_windows"
+
+[paths]
+temporal_run = "artifacts/runs/20261027T001114_temporal_4bf4a071"
+output_dir = "artifacts/runs"
+
+[sensitivity]
+horizon = 5
+primary_residue = 0
+residues = [0, 1, 2, 3, 4]
+containment = "target_start_and_end_in_forecast_calendar_year"
+sampling = "original_session_number_modulo_horizon"

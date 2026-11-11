@@ -1,5 +1,11 @@
 # Research decisions
 
+## 2026-11-10 — temporal sensitivity protocol
+
+The supplied report's section 7.3 proposes annual outcome containment and nonoverlapping-window sensitivity. Start with these bounded checks on the completed temporal predictions. `configs/sensitivity.toml` and `docs/sensitivity_protocol.md` fix the masks before computing subset scores: retain both target endpoints within the forecast year; sample original session numbers modulo five globally; designate residue zero as primary and disclose all five residues and their intersections with containment. Preserve all eleven variants, existing fits, tail thresholds and reserved identities. This is retrospective development rescoring, not a new untouched test. Dependence-aware uncertainty and a later-period protocol remain deferred.
+
+Completed run `20261111T035209_sensitivity_f9d56993` rescored all 12 declared subsets. Annual containment retained 1,252 of 1,272 identities; primary modulo sampling retained 254, or 249 with containment. Independent verification checked 15,264 membership rows, 2,772 metric rows, 5,544 comparisons and all 12 overlap/count audits. Fixed Ridge retained lower aggregate RMSE than both benchmarks in every offset, but the five-session benchmark remained better in the primary high-outcome group. Tuning gains changed sign in some offsets. All 163 tests passed, including holdout-read and no-refit/download guards. Two real runs produced byte-identical masks and result tables; all 34 final-run artifact hashes matched. Source evidence remained unchanged. The cumulative PDF was not rebuilt; new results are documented in `docs/sensitivity_results.md` and the new run's `results.md`.
+
 ## 2026-10-23 — integrate the pooled experiment
 
 - Preserved the chronological pilot, config, raw cached snapshot and previous artifacts.
