@@ -41,8 +41,14 @@ Experiments create new folders under `artifacts/runs/`; prospective preparation 
 
 ```text
 configs/                 Experiment settings
-src/spy_volatility/      Application runner, models, calculations and verifiers
-tests/                   Unit and integration tests using artificial data
+src/spy_volatility/
+  application.py         Class-based workflow selection
+  core/                  Data, features, targets and models
+  analysis/              EDA, temporal fitting, diagnostics and Markdown results
+  workflows/             Baseline, pooled, temporal and later-stage orchestration
+  verification/          Independent calculation audits
+  infrastructure/        Source provenance and experiment register
+tests/                   Mirrors the package responsibilities
 docs/
   protocols/             Research definitions and frozen rules
   results/               Findings and limitations

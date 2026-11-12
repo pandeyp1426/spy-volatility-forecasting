@@ -28,12 +28,12 @@ class ExperimentRunner:
     offline: bool = False
 
     workflows: ClassVar[dict[str, ExperimentDefinition]] = {
-        "chronological": ExperimentDefinition("pipeline", "run_chronological", True),
-        "pooled_random": ExperimentDefinition("pooled", "run_pooled", True, True),
-        "retrospective_temporal": ExperimentDefinition("next_phase", "run_next_phase", True),
-        "temporal_sensitivity": ExperimentDefinition("sensitivity", "run_sensitivity"),
-        "temporal_uncertainty": ExperimentDefinition("uncertainty", "run_uncertainty"),
-        "prospective_protocol": ExperimentDefinition("prospective", "freeze_prospective"),
+        "chronological": ExperimentDefinition("workflows.baseline", "run_chronological", True),
+        "pooled_random": ExperimentDefinition("workflows.pooled", "run_pooled", True, True),
+        "retrospective_temporal": ExperimentDefinition("workflows.temporal", "run_next_phase", True),
+        "temporal_sensitivity": ExperimentDefinition("workflows.sensitivity", "run_sensitivity"),
+        "temporal_uncertainty": ExperimentDefinition("workflows.uncertainty", "run_uncertainty"),
+        "prospective_protocol": ExperimentDefinition("workflows.prospective", "freeze_prospective"),
     }
 
     def run(self) -> dict:
@@ -47,6 +47,6 @@ class ExperimentRunner:
         execute = getattr(import_module(f".{definition.module}", __package__), definition.function)
         kwargs = {"offline": self.offline} if definition.accepts_offline else {}
         if definition.validated_config:
-            from .pipeline import load_config
+            from spy_volatility.workflows.baseline import load_config
             return execute(path, load_config(path), **kwargs)
         return execute(path, **kwargs)

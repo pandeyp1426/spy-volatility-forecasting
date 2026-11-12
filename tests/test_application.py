@@ -4,7 +4,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from spy_volatility import application, pipeline
+from spy_volatility import application
+import spy_volatility.workflows.baseline as pipeline
 
 
 @pytest.mark.parametrize("strategy", list(application.ExperimentRunner.workflows))

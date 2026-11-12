@@ -13,17 +13,26 @@
 | `notebooks/` | Optional thin entry points using the same application code |
 | `data/`, `artifacts/`, `output/` | Ignored local snapshots, immutable experiment evidence, prepared models and generated reports |
 
-## Execution and objects
+## Package responsibilities
 
-`application.ExperimentRunner` is the application boundary. It owns a configuration path and offline setting, selects a workflow from explicit `ExperimentDefinition` objects, and imports only the selected implementation. The CLI uses this class for all six workflows, including prospective preparation. Unknown strategies fail before execution. The existing `pipeline.run_phase1` function delegates to the runner so notebooks and earlier callers remain compatible.
+- `application.py`: `ExperimentRunner` and immutable workflow definitions; one CLI entry point.
+- `core/`: data loading/audits, feature/target calculations and model definitions.
+- `analysis/`: training EDA, temporal fitting/search, diagnostic metrics and Markdown results.
+- `workflows/`: orchestrates each experiment, its config, evidence and verification.
+- `verification/`: independent arithmetic and membership checks; deliberately does not reuse producing score functions.
+- `infrastructure/`: recursive source hashing/snapshotting and experiment inventory.
 
-Workflow modules own their scientific sequence and safety checks. `pipeline.run_chronological` implements the original baseline; `pooled` and `next_phase` implement the other model experiments; `sensitivity`, `uncertainty`, and `prospective` handle later stages. Offline-only workflows enforce that restriction internally even if the common CLI flag is omitted.
+Tests mirror these responsibilities. End-to-end workflow tests remain with their workflow so their safety guards and artificial fixtures are easy to locate. Config files stay immediately under `configs/` because all saved experiment paths resolve relative to its parent.
 
-Numerical calculations remain ordinary functions in `research`, `models` and the diagnostic modules. Scikit-learn estimators already encapsulate fitted model state. Introducing inheritance around every calculation would add indirection without a useful state boundary. Independent verification modules deliberately recompute the arithmetic rather than depending on the producing score functions.
+## Execution and compatibility
 
-## Reproducibility and compatibility
+`ExperimentRunner` loads a configuration and lazily selects its workflow. `workflows.baseline.run_phase1` remains the compatibility function used by the updated notebooks. The unified `python -m spy_volatility --config ...` command and both console-script aliases stay unchanged. The old standalone `python -m spy_volatility.prospective` command has a tiny forwarding entry point; the actual implementation is in `workflows/prospective.py`.
 
-Source modules remain in one package so existing source-hash and source-copy contracts continue to identify all executing Python files. Existing import paths, notebooks, config locations, raw snapshots, frozen bundles and historical run folders are preserved. Documentation is organized separately; new prospective bundles copy protocol documents from `docs/protocols/`.
+Python modules now use explicit imports such as `spy_volatility.core.models` and `spy_volatility.workflows.baseline`. Consumers of the former flat Python module paths must update imports; the project tests and notebooks have been updated. Numerical functions remain functions, and fitted sklearn estimators retain model state. This avoids class hierarchies with no useful state boundary.
+
+## Reproducibility
+
+`infrastructure.provenance` hashes every Python module recursively with a package-relative path. Its shared source-copy routine preserves subfolders and validates every copy against the run's source hashes. New run bundles therefore include the complete nested implementation rather than just the workflow directory. Old frozen source bundles, parent runs, snapshots and model protocols remain unchanged and keep their original recorded paths and hashes.
 
 `docs/archive/historical/` preserves metrics and source provenance used by the run register. The archived README/requirements bytes are covered by its manifest. Its README describes the original external archive, not commands to run from this checkout. These historical records are not executable report-generation support.
 

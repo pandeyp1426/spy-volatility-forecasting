@@ -4,7 +4,7 @@ import argparse
 import json
 import sys
 
-from .application import ExperimentRunner
+from spy_volatility.application import ExperimentRunner
 
 
 def main() -> int:
