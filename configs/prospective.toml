@@ -1,0 +1,45 @@
+# Freeze before any 2027 observations or current uncertainty scores are used.
+[experiment]
+strategy = "prospective_protocol"
+name = "frozen_ridge_2027"
+
+[paths]
+temporal_run = "artifacts/runs/20261027T001114_temporal_4bf4a071"
+output_dir = "artifacts/protocols"
+
+[training]
+start = "2015-01-01"
+label_cutoff = "2025-12-31"
+model = "ridge"
+alpha = 1.0
+features = ["log_return", "volatility_5", "volatility_10", "volatility_20", "momentum_5"]
+prediction_floor = 0.0
+tail_quantile = 0.95
+refit = false
+
+[evaluation]
+start = "2027-01-01"
+end_exclusive = "2028-01-01"
+calendar = "NYSE"
+horizon = 5
+ddof = 1
+price_field = "Adj Close"
+return = "log"
+issue_deadline_minutes_after_close = 120
+label_deadline_hours_after_target_close = 24
+score_not_before = "2028-01-10"
+containment = "target_start_and_end_in_forecast_calendar_year"
+benchmarks = ["baseline", "baseline_5"]
+primary_metric = "rmse_pp"
+missing_policy = "common_valid_on_time_forecasts_and_archived_labels"
+
+[uncertainty]
+method = "paired_stationary_bootstrap_original_session_grid"
+replicates = 5000
+seed = 42
+primary_expected_block_length = 20
+expected_block_lengths = [5, 10, 20, 40, 60]
+nominal_coverage = 0.95
+primary_family_individual_coverage = 0.975
+primary_comparisons = ["ridge_minus_baseline", "ridge_minus_baseline_5"]
+evidence_rule = "lower_point_rmse_and_both_adjusted_upper_bounds_below_zero_at_primary_block_length"

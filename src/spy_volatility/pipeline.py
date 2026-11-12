@@ -112,6 +112,9 @@ def run_phase1(config_path: str | Path = "configs/phase1.toml", *, offline: bool
     config_path = Path(config_path).resolve()
     with config_path.open("rb") as stream:
         requested = tomllib.load(stream)
+    if requested.get("experiment", {}).get("strategy") == "temporal_uncertainty":
+        from .uncertainty import run_uncertainty
+        return run_uncertainty(config_path)
     if requested.get("experiment", {}).get("strategy") == "temporal_sensitivity":
         from .sensitivity import run_sensitivity
         return run_sensitivity(config_path)

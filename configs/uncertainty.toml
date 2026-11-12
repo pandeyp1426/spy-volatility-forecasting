@@ -1,0 +1,19 @@
+# Fixed before computing the new bootstrap intervals; historical scores are known.
+[experiment]
+strategy = "temporal_uncertainty"
+name = "paired_annual_stationary_bootstrap"
+
+[paths]
+temporal_run = "artifacts/runs/20261027T001114_temporal_4bf4a071"
+output_dir = "artifacts/runs"
+
+[uncertainty]
+subsets = ["within_year", "original"]
+block_lengths = [5, 10, 20, 40, 60]
+primary_block_length = 20
+n_resamples = 5000
+seed = 42
+confidence_level = 0.95
+interval = "percentile"
+annual_weights = "fixed_original_eligible_counts"
+invalid_draw_policy = "retain_draw_and_withhold_interval"

@@ -10,6 +10,15 @@ The newer EDA research archive was unavailable. The integrated run uses the orig
 
 ## Temporal sensitivity checks
 
+The subsequent [uncertainty analysis](docs/uncertainty_results.md) is complete, and the [2027 protocol](docs/prospective_protocol.md) has a prepared fixed model. Run either stage independently from the project root:
+
+```powershell
+.\.venv\Scripts\python.exe -m spy_volatility --config configs/uncertainty.toml --offline
+.\.venv\Scripts\python.exe -m spy_volatility.prospective --config configs/prospective.toml
+```
+
+Uncertainty uses paired block resampling of saved development errors, preserving missing original sessions and annual weights. The later-period command prepares a new model/protocol bundle using only allowed historical training rows. It does not start daily forecasting or score future outcomes. Ridge's historical advantage over the five-session benchmark remains inconclusive under the new uncertainty intervals.
+
 The next development phase rescores the saved temporal forecasts with outcomes contained within their forecast year and with nonoverlapping five-session outcome windows. It reports all five original-session offsets, with offset zero fixed as primary, and their intersections with annual containment. Existing model fits, training thresholds and reserved identities are preserved.
 
 ```powershell
@@ -116,4 +125,4 @@ Run the tests:
 
 If you change the ticker, download dates, or calendar, choose a new `snapshot_dir` in the config. Existing snapshots are never silently replaced. Use only runs whose `run_record.json` says `success`; failed runs may contain partial files and an `error.txt` explaining the problem.
 
-Next, proposed only: freeze a separately reserved future-period protocol and justify a dependence-aware uncertainty analysis. Large-outcome underprediction and unstable annual errors deserve attention before expanding the model collection. No future period was downloaded or scored, and no routine command evaluates a final test.
+Dependence-aware uncertainty is complete and the 2027 protocol/model is prepared. Next: implement and test daily point-in-time acquisition and trustworthy timestamped forecast records before live collection. Large-outcome underprediction remains unresolved. No future period was downloaded or scored, and no routine command evaluates a final test. The cumulative PDF still needs these new results incorporated.
