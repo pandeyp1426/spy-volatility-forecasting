@@ -1,0 +1,8 @@
+# Separate one-off pilot. This does not amend or operate the 2027 study.
+[prepared]
+bundle = "artifacts/protocols/20261112T033437_prospective_121fb52e"
+freeze_record_sha256 = "f4802ee310ca641c31444ae9a54e7b581808b44e8d78bbbd6876f7bfd0620d03"
+model_sha256 = "b9fb8225931f0f0e0ce55a6862842baa011f6b0479b0250a54294331dd34a85c"
+
+[paths]
+output_dir = "artifacts/pilots"
