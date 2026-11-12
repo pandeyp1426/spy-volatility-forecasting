@@ -2,7 +2,7 @@
 
 Estimate the standard deviation of SPY daily returns over the **next five trading sessions**. The project compares historical-volatility benchmarks, Ridge, Random Forest and gradient boosting using reproducible historical experiments.
 
-Ridge has lower aggregate temporal RMSE than both benchmarks, but dependence-aware uncertainty leaves its advantage over the five-session benchmark inconclusive. High-volatility underprediction remains unresolved. The 2027 model/protocol is prepared; live forecasting has not started. See [results](docs/results/uncertainty_results.md) and [the future evaluation protocol](docs/protocols/prospective_protocol.md).
+Ridge has lower aggregate temporal RMSE than both benchmarks, but dependence-aware uncertainty leaves its advantage over the five-session benchmark inconclusive. High-volatility underprediction remains unresolved. The 2027 model/protocol is prepared; prospective collection has not started. A [separate manual pilot](docs/pilot_forecast.md) generated and verified a forecast from the November 11, 2026 close. See [results](docs/results/uncertainty_results.md) and [the future evaluation protocol](docs/protocols/prospective_protocol.md).
 
 ## Setup
 
@@ -36,6 +36,14 @@ All workflows share one entry point:
 Use `configs/<name>` in the command above. After installation, `spy-volatility` is an equivalent command; the older `spy-phase1` command remains supported. Downstream configurations reference local, ignored evidence and cannot reproduce results from a fresh clone alone. Source snapshots and parent run hashes are checked before use.
 
 Experiments create new folders under `artifacts/runs/`; prospective preparation creates `artifacts/protocols/`. Read the printed report and status. Use successful experiment runs only; a prospective bundle must say `prepared_not_live`. Reserved test responses are not scored by routine commands. No daily scheduler or forecast logger is started.
+
+For a single pilot using the designated frozen model and newly acquired completed-session prices:
+
+```powershell
+.\.venv\Scripts\python.exe -m spy_volatility.workflows.pilot --config configs/pilot.toml
+```
+
+This separate command creates `artifacts/pilots/`, retains unsuccessful attempts, and neither refits nor operates the 2027 evaluation. See [pilot results and offline replay](docs/pilot_forecast.md).
 
 ## Project structure
 

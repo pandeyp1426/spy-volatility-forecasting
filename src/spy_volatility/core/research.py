@@ -27,19 +27,16 @@ def _check_index(frame: pd.Series | pd.DataFrame) -> None:
         raise ValueError("Trading dates must be unique and in chronological order.")
 
 
-def build_features(
+def build_predictors(
     prices: pd.Series,
     windows: Iterable[int] = (5, 10, 20),
-    horizon: int = 5,
     momentum_window: int = 5,
     baseline_window: int = 20,
 ) -> pd.DataFrame:
-    """Build complete forecast examples from audited adjusted closing prices.
+    """Calculate historical inputs without requiring or constructing outcomes.
 
-    ``volatility_w`` uses returns r_(t-w+1), ..., r_t. The target uses
-    r_(t+1), ..., r_(t+horizon), and never enters an input calculation.
-    ``session_number`` is the position in the original audited price series.
-    The caller must audit the exchange calendar before calling this function.
+    Keep warmup NaNs; callers select complete rows after auditing the calendar.
+    ``volatility_w`` includes r_(t-w+1), ..., r_t, in decimal daily units.
     """
     if not isinstance(prices, pd.Series):
         raise ValueError("prices must be a pandas Series of adjusted closing prices.")
@@ -49,7 +46,6 @@ def build_features(
         raise ValueError("windows must contain distinct rolling-window lengths.")
     for window in windows:
         _positive_integer(window, "volatility window", 2)
-    _positive_integer(horizon, "horizon", 2)
     _positive_integer(momentum_window, "momentum_window")
     _positive_integer(baseline_window, "baseline_window", 2)
     try:
@@ -65,6 +61,24 @@ def build_features(
         examples[f"volatility_{window}"] = returns.rolling(window).std(ddof=1)
     examples[f"momentum_{momentum_window}"] = returns.rolling(momentum_window).sum()
     examples["baseline"] = returns.rolling(baseline_window).std(ddof=1)
+    return examples
+
+
+def build_features(
+    prices: pd.Series,
+    windows: Iterable[int] = (5, 10, 20),
+    horizon: int = 5,
+    momentum_window: int = 5,
+    baseline_window: int = 20,
+) -> pd.DataFrame:
+    """Build complete research examples, preserving the historical definitions.
+
+    The target uses r_(t+1), ..., r_(t+horizon); it never enters predictors.
+    The caller must audit the exchange calendar before calling this function.
+    """
+    _positive_integer(horizon, "horizon", 2)
+    examples = build_predictors(prices, windows, momentum_window, baseline_window)
+    returns = examples["log_return"]
     # The rolling value at t+horizon contains exactly the next horizon returns.
     examples["target"] = returns.rolling(horizon).std(ddof=1).shift(-horizon)
     dates = pd.Series(prices.index, index=prices.index)

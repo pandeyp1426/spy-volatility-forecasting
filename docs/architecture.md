@@ -30,6 +30,8 @@ Tests mirror these responsibilities. End-to-end workflow tests remain with their
 
 Python modules now use explicit imports such as `spy_volatility.core.models` and `spy_volatility.workflows.baseline`. Consumers of the former flat Python module paths must update imports; the project tests and notebooks have been updated. Numerical functions remain functions, and fitted sklearn estimators retain model state. This avoids class hierarchies with no useful state boundary.
 
+The separate manual `python -m spy_volatility.workflows.pilot` command loads the designated prepared bundle through pinned hashes. `core.research.build_predictors` exposes the same historical predictor calculations used by `build_features`, without requiring future labels. `verification.pilot` independently checks scalar return/window arithmetic and reconstructs sklearn prediction state without fitting. New snapshots, reports and unsuccessful attempts go only to `artifacts/pilots/`; `--replay` verifies a saved pilot offline without issuing another forecast. This is not the 2027 collection workflow. See [pilot evidence and commands](pilot_forecast.md).
+
 ## Reproducibility
 
 `infrastructure.provenance` hashes every Python module recursively with a package-relative path. Its shared source-copy routine preserves subfolders and validates every copy against the run's source hashes. New run bundles therefore include the complete nested implementation rather than just the workflow directory. Old frozen source bundles, parent runs, snapshots and model protocols remain unchanged and keep their original recorded paths and hashes.
