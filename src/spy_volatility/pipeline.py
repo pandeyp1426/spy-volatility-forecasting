@@ -101,6 +101,12 @@ def _plot_results(train: pd.DataFrame, predictions: pd.DataFrame, output: Path) 
 
 
 def run_phase1(config_path: str | Path = "configs/phase1.toml", *, offline: bool = False) -> dict:
+    """Backward-compatible entry point for existing notebooks and callers."""
+    from .application import ExperimentRunner
+    return ExperimentRunner(config_path, offline=offline).run()
+
+
+def run_chronological(config_path: str | Path = "configs/phase1.toml", *, offline: bool = False) -> dict:
     """Run validation baseline; return results or raise after saving failure details.
 
     Relative data/output paths are resolved against the config's grandparent.
@@ -110,21 +116,9 @@ def run_phase1(config_path: str | Path = "configs/phase1.toml", *, offline: bool
     independently verifies the saved training/validation calculations.
     """
     config_path = Path(config_path).resolve()
-    with config_path.open("rb") as stream:
-        requested = tomllib.load(stream)
-    if requested.get("experiment", {}).get("strategy") == "temporal_uncertainty":
-        from .uncertainty import run_uncertainty
-        return run_uncertainty(config_path)
-    if requested.get("experiment", {}).get("strategy") == "temporal_sensitivity":
-        from .sensitivity import run_sensitivity
-        return run_sensitivity(config_path)
-    if requested.get("experiment", {}).get("strategy") == "retrospective_temporal":
-        from .next_phase import run_next_phase
-        return run_next_phase(config_path, offline=offline)
     config = load_config(config_path)
-    if config["split"].get("strategy") == "pooled_random":
-        from .pooled import run_pooled
-        return run_pooled(config_path, config, offline=offline)
+    if config["split"].get("strategy", "chronological") != "chronological":
+        raise ValueError("Chronological runner requires a chronological split")
     root = config_path.parent.parent
     now = datetime.now(timezone.utc)
     run_id = now.strftime("%Y%m%dT%H%M%S") + "_" + uuid4().hex[:8]

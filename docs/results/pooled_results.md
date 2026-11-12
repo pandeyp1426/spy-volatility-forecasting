@@ -13,11 +13,9 @@ Units are daily-volatility percentage points. All models use the same 414 valida
 
 The newer archive described by the handoff was unavailable. Results are a new run on the preserved snapshot, not exact archive reproduction. Baseline and Ridge are close to the rounded handoff figures; small tree-model differences cannot be uniquely attributed without the missing snapshot and version record. Model settings were not changed to match reference scores.
 
-- [Run report](../artifacts/runs/20261024T163643_pooled_b62233b3/results.md)
-- [Run record and source hashes](../artifacts/runs/20261024T163643_pooled_b62233b3/run_record.json)
-- [Verification evidence](../artifacts/integration_verification_2026-10-24.json)
-- [Current cumulative PDF](../output/pdf/SPY_Research_Report_current.pdf)
-- [Stable LaTeX source](../report/main.tex) and [weekly build instructions](../report/README.md)
+- [Run report](../../artifacts/runs/20261024T163643_pooled_b62233b3/results.md)
+- [Run record and source hashes](../../artifacts/runs/20261024T163643_pooled_b62233b3/run_record.json)
+- [Verification evidence](../../artifacts/integration_verification_2026-10-24.json)
 - [Historical chronological baseline](results.md) remains a different evaluation sample.
 
 The full suite passed 70 tests; after final figure/font and open-PDF handling changes, all 15 focused pooled/report tests passed. The original baseline reproduces its recorded metrics. Six core pooled outputs match byte-for-byte across repeated offline runs. All seven final PDF pages were visually checked.

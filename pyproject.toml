@@ -21,9 +21,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 notebook = ["ipykernel>=6"]
-report = ["pymupdf>=1.24"]
 
 [project.scripts]
+spy-volatility = "spy_volatility.__main__:main"
 spy-phase1 = "spy_volatility.__main__:main"
 
 [tool.setuptools.packages.find]

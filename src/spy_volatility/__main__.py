@@ -4,16 +4,16 @@ import argparse
 import json
 import sys
 
-from .pipeline import run_phase1
+from .application import ExperimentRunner
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run a configured SPY validation experiment; test remains reserved")
-    parser.add_argument("--config", default="configs/phase1.toml", help="Path to chronological, pooled, temporal, sensitivity or uncertainty TOML configuration")
+    parser.add_argument("--config", default="configs/phase1.toml", help="Path to an experiment or prospective protocol TOML configuration")
     parser.add_argument("--offline", action="store_true", help="Require the saved snapshot; never download data")
     arguments = parser.parse_args()
     try:
-        result = run_phase1(arguments.config, offline=arguments.offline)
+        result = ExperimentRunner(arguments.config, offline=arguments.offline).run()
     except Exception as error:
         print(f"{type(error).__name__}: {error}", file=sys.stderr)
         return 1

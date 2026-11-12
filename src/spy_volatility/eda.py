@@ -85,10 +85,9 @@ def write_training_eda(train: pd.DataFrame, output: Path) -> dict:
     with plt.rc_context({"font.size": 14, "axes.spines.top": False, "axes.spines.right": False,
                          "axes.titleweight": "bold", "savefig.facecolor": "white"}):
         def save(figure, name):
-            for suffix in ("png", "pdf"):
-                destination = figures / f"{name}.{suffix}"
-                figure.savefig(destination, dpi=180, bbox_inches="tight")
-                paths.append(destination.relative_to(output).as_posix())
+            destination = figures / f"{name}.png"
+            figure.savefig(destination, dpi=180, bbox_inches="tight")
+            paths.append(destination.relative_to(output).as_posix())
             plt.close(figure)
 
         target_pp = 100.0 * frame[TARGET_COLUMN]

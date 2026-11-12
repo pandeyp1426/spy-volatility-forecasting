@@ -1,6 +1,6 @@
 # Study configurations
 
-The original chronological design below remains supported by `configs/phase1.toml`. The requested pooled design uses `configs/pooled.toml`, the same audited price snapshot and feature construction, a single seed-42 permutation, and separate train/validation/test identities. It fits only training rows and scores only validation. See [cumulative report source](../report/main.tex) for the current full methodology and [decision log](decision_log.md) for overlap and prior-use disclosures. The two designs have different evaluation samples.
+The original chronological design below remains supported by `configs/phase1.toml`. The requested pooled design uses `configs/pooled.toml`, the same audited price snapshot and feature construction, a single seed-42 permutation, and separate train/validation/test identities. It fits only training rows and scores only validation. See [temporal results](../results/temporal_results.md) for the later evaluation methodology and [decision log](../decision_log.md) for overlap and prior-use disclosures. The two designs have different evaluation samples.
 
 ## Completed retrospective temporal design
 
@@ -12,7 +12,7 @@ The declared sequence is unchanged fixed models, the unfitted 5-session comparat
 
 Metrics use `e = 100 * (prediction - observed)`: MAE is mean absolute error, MSE is mean squared error in pp², RMSE is its square root in pp, and bias is mean signed error. Overall metrics concatenate observations; averaging annual RMSE is incorrect. MSE and RMSE rank identical samples identically and are not independent confirmations.
 
-See [measured temporal results](temporal_results.md). This reused history includes years formerly reserved in the older chronological pilot; the pilot's original output remains unscored and preserved, but those calendar years can no longer be described as untouched for the overall project. The current formal reservation is the saved pooled test identities, which remain unscored. Neither identity exclusion nor timestamp ordering removes shared underlying returns or prior historical exposure. A separately frozen future evaluation remains proposed.
+See [measured temporal results](../results/temporal_results.md). This reused history includes years formerly reserved in the older chronological pilot; the pilot's original output remains unscored and preserved, but those calendar years can no longer be described as untouched for the overall project. The current formal reservation is the saved pooled test identities, which remain unscored. Neither identity exclusion nor timestamp ordering removes shared underlying returns or prior historical exposure. A separately frozen future evaluation remains proposed.
 
 # How the forecast works
 
@@ -90,4 +90,4 @@ Each successful run saves a report, plots, CSV tables, audit, calculation checks
 
 ## Limits
 
-A five-return target is a noisy estimate of volatility. Yahoo can revise historical adjusted prices, so the fixed snapshot is reproducible but does not guarantee what was published on each historical date. Passing calculation checks does not prove forecast usefulness or trading profitability. See [baseline results](results.md) for measured performance.
+A five-return target is a noisy estimate of volatility. Yahoo can revise historical adjusted prices, so the fixed snapshot is reproducible but does not guarantee what was published on each historical date. Passing calculation checks does not prove forecast usefulness or trading profitability. See [baseline results](../results/results.md) for measured performance.

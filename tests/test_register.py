@@ -73,8 +73,8 @@ def test_reserved_contents_never_opened_even_for_hashing_and_no_recursive_index(
 
 
 def test_snapshot_builds_and_missing_external_reference_have_honest_evidence(tmp_path):
-    save_json(tmp_path / "report/historical/source_manifest.json", {"archive": "pilot.zip", "archive_sha256": "pilot-hash"})
-    save_json(tmp_path / "report/historical/handoff_reference.json", {"archive_available": False,
+    save_json(tmp_path / "docs/archive/historical/source_manifest.json", {"archive": "pilot.zip", "archive_sha256": "pilot-hash"})
+    save_json(tmp_path / "docs/archive/historical/handoff_reference.json", {"archive_available": False,
         "raw_csv_sha256": "different-snapshot", "validation": {"ridge": {"rmse_pp": .63}}})
     raw = tmp_path / "data/raw/frozen/raw.csv"
     raw.parent.mkdir(parents=True)

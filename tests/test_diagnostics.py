@@ -155,6 +155,8 @@ def test_history_uses_actual_dates_as_unconnected_points_and_figures_render(tmp_
     monkeypatch.setattr(matplotlib.axes.Axes, "scatter", record_scatter)
     frame = fixture_predictions().query("model == 'ridge'")
     result = diagnostics.write_diagnostics(frame, None, tmp_path, "pooled")
-    assert len(result["figures"]) == 6
+    assert len(result["figures"]) == 3
+    assert all(Path(path).suffix == ".png" for path in result["figures"])
+    assert not list(tmp_path.rglob("*.pdf"))
     assert all(Path(path).stat().st_size > 1000 for path in result["figures"])
     assert dates_seen and all(dates.equals(pd.DatetimeIndex(frame.forecast_date)) for dates in dates_seen)

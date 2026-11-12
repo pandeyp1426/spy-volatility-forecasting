@@ -1,6 +1,6 @@
 # Temporal sensitivity results
 
-Completed on 10 November 2026 (local date). The source is the verified temporal run `20261027T001114_temporal_4bf4a071`. The implementation uses saved forecasts only, with no new fits, tuning or data acquisition. See the [frozen subset protocol](sensitivity_protocol.md) and `configs/sensitivity.toml`.
+Completed on 10 November 2026 (local date). The source is the verified temporal run `20261027T001114_temporal_4bf4a071`. The implementation uses saved forecasts only, with no new fits, tuning or data acquisition. See the [frozen subset protocol](../protocols/sensitivity_protocol.md) and `configs/sensitivity.toml`.
 
 Designated completed run: `20261111T035209_sensitivity_f9d56993` (run identifiers use UTC). All **163 tests passed**, including 35 sensitivity tests. A second real offline execution reproduced byte-identical membership, metric, comparison and audit tables. Verification evidence is saved locally in `artifacts/sensitivity_verification_2026-11-10.json`.
 

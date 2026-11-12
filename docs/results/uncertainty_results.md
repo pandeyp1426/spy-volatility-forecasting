@@ -1,6 +1,6 @@
 # Dependence-aware uncertainty results
 
-Completed 11 November 2026 local time. Source temporal run: `20261027T001114_temporal_4bf4a071`. The [frozen protocol](uncertainty_protocol.md) predates these interval calculations; historical model comparisons were already known.
+Completed 11 November 2026 local time. Source temporal run: `20261027T001114_temporal_4bf4a071`. The [frozen protocol](../protocols/uncertainty_protocol.md) predates these interval calculations; historical model comparisons were already known.
 
 Designated uncertainty run: `20261112T033412_uncertainty_33ba49a1`. Designated prepared 2027 bundle: `20261112T033437_prospective_121fb52e`, under `artifacts/protocols/`. IDs use UTC. Full suite: **231 tests passed**, including 68 new focused tests. Repeated real executions reproduced all bootstrap arrays and result tables, and the frozen model/schedule. Input/output hashes and all 12 annual-grid audit rows were verified. Evidence: `artifacts/uncertainty_prospective_verification_2026-11-11.json`.
 
@@ -29,4 +29,4 @@ The estimates condition on already fitted, historically selected models and the 
 
 The stationary-bootstrap foundation is described by [Politis and Romano](https://users.ssc.wisc.edu/~behansen/718/Politis%20Romano.pdf); [Hardle, Horowitz and Kreiss](https://www.ssc.wisc.edu/~bhansen/718/HardleHorowitzKreiss.pdf) discuss limitations of time-series bootstrap approximations. The masked annual construction is a project adaptation.
 
-The [2027 protocol](prospective_protocol.md) freezes fixed Ridge and both benchmarks before future outcomes. A model has been prepared from 2,346 permitted 2015–2025 observations, with no future data acquisition or scoring. The calendar has 246 contained forecast origins. Implementing trustworthy daily acquisition and timestamped forecast records remains necessary before live collection; no scheduler or logger was started by this work.
+The [2027 protocol](../protocols/prospective_protocol.md) freezes fixed Ridge and both benchmarks before future outcomes. A model has been prepared from 2,346 permitted 2015–2025 observations, with no future data acquisition or scoring. The calendar has 246 contained forecast origins. Implementing trustworthy daily acquisition and timestamped forecast records remains necessary before live collection; no scheduler or logger was started by this work.

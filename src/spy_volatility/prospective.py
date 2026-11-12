@@ -221,8 +221,9 @@ def freeze_prospective(config_path: str | Path, *, now: datetime | None = None) 
         if _sha(output / "source" / "prospective.toml") != record["config_sha256"]:
             raise ValueError("Configuration changed during freezing")
         for name in ("prospective_protocol.md", "uncertainty_protocol.md"):
-            if (root / "docs" / name).is_file():
-                shutil.copy2(root / "docs" / name, output / "source" / name)
+            document = root / "docs" / "protocols" / name
+            if document.is_file():
+                shutil.copy2(document, output / "source" / name)
         record["source_git"] = {}
         for name, args in (("commit", ["rev-parse", "HEAD"]), ("working_tree", ["status", "--short"])):
             try:

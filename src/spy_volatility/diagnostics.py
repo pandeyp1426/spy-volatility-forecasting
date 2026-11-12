@@ -188,10 +188,9 @@ def _plots(frame: pd.DataFrame, folder: Path, scope: str) -> list[str]:
             for axis in list(axes.flat)[len(groups):]:
                 axis.set_visible(False)
         figure.suptitle(f"{scope.replace('_', ' ').title()}: development predictions only", fontsize=12)
-        for extension in ("pdf", "png"):
-            path = folder / f"diagnostic_{scope}_{kind}.{extension}"
-            figure.savefig(path, dpi=150)
-            paths.append(path.as_posix())
+        path = folder / f"diagnostic_{scope}_{kind}.png"
+        figure.savefig(path, dpi=150)
+        paths.append(path.as_posix())
         plt.close(figure)
     return paths
 

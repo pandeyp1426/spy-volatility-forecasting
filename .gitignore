@@ -16,6 +16,23 @@ artifacts/
 output/
 *.log
 
+# Rendered reports and LaTeX build products: publish separately from source
+*.pdf
+*.aux
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.toc
+*.out
+
+# Local editor, application and temporary state
+.streamlit/
+.vscode/
+tmp/
+.ruff_cache/
+
 # Credentials and local settings
 .env
 .env.*

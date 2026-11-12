@@ -213,7 +213,7 @@ def build_register(root: Path, output: Path, selected_run_id: str | None = None)
             artifacts.append(_artifact(path, root, entry["run_id"], entry["command"], saved_hashes.get(relative),
                                        mutable=directory.name == selected_run_id and relative == "run_record.json"))
             seen.add(path.resolve())
-    historical = root / "report/historical"
+    historical = root / "docs/archive/historical"
     manifest = _json(historical / "source_manifest.json")
     if manifest:
         runs.append({"run_id": "supplied_historical_pilot", "status": "historical summary available", "role": "historical",
@@ -222,7 +222,7 @@ def build_register(root: Path, output: Path, selected_run_id: str | None = None)
                      "dataset_sha256": "unavailable", "code_commit": "unavailable", "configuration": {}, "seed": "not recorded",
                      "row_membership": {"files": [], "summary": {}}, "fit_evaluation_dates": "See supplied archive; not reconstructed",
                      "model_settings": "not reconstructed", "metric_units": "daily-volatility percentage points",
-                     "results": {"artifact": "report/historical/pilot_validation_metrics.csv"},
+                     "results": {"artifact": "docs/archive/historical/pilot_validation_metrics.csv"},
                      "interpretation": "Historical sample differs from pooled and temporal development rows.",
                      "limitations": ["Summary table is preserved; raw run membership/predictions are not reconstructed."],
                      "decision": "Retain historical context", "evidence_missing": ["Complete original run record and observation-level evidence"],
@@ -242,7 +242,7 @@ def build_register(root: Path, output: Path, selected_run_id: str | None = None)
         missing_archive = root / "artifacts/source_materials/SPY_EDA_Research_Package.zip"
         if not missing_archive.exists():
             artifacts.append(_artifact(missing_archive, root, "separate_chatgpt_pooled_reference", "external acquisition; unavailable"))
-    for folder in (root / "data/raw", root / "report", root / "artifacts/source_materials", root / "output/pdf"):
+    for folder in (root / "data/raw", root / "docs/archive", root / "report", root / "artifacts/source_materials", root / "output/pdf"):
         if not folder.is_dir():
             continue
         for path in sorted(folder.rglob("*")):

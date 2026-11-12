@@ -143,6 +143,8 @@ def test_pooled_pipeline_never_evaluates_test(tmp_path, monkeypatch):
     monkeypatch.setattr(pooled, "write_training_eda", guarded_eda)
     result = run_phase1(config_path, offline=True)
     out = Path(result["output_dir"])
+    assert not list(out.rglob("*.pdf"))
+    assert len(list((out / "figures").glob("*.png"))) == 4
     record = json.loads((out/"run_record.json").read_text())
     assert record["final_test_evaluated"] is False
     assert record["status"] == "success"
