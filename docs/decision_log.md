@@ -1,5 +1,23 @@
 # Research decisions
 
+## 2026-11-19 — manual pilot outcome collected; automation remains inactive
+
+Imported the November 11 pilot by its pinned record hash and verified its original evidence without reissuing it. Acquired its now-mature November 12–18 outcome at 08:08:53.546912 UTC using one new six-price adjusted-close vintage. Observed daily-return sample SD was `0.006995661396605764`; independent scalar verification differed by `8.67e-19`. The separate manual pilot's three signed errors were +0.9377125265 pp (Ridge), +0.7243530518 pp (20-session benchmark) and +1.9265502714 pp (5-session benchmark). One observation establishes no general advantage; the original late forecast remains ineligible for any on-time prospective claim.
+
+Preserved both earlier failed acquisition attempts. Fixed a new collector archive-comparison defect exposed by real data: second-resolution provider dates and microsecond-resolution CSV dates represented identical sessions. Comparisons now normalize index precision and require exact price equality; existing research/data functions and the original frozen artifacts were not changed. The live journal replays successfully. No new live forecast, recurring task, cloud bucket or 2027 collection was activated. Detailed evidence and tests are recorded in `docs/results/automation_progress.md` and `docs/operations.md`.
+
+Final complete suite: 296 passed, zero failures/errors/skips. The final synthetic demonstration and live manual-pilot journal passed replay, and all 36 prepared hashes plus the original raw snapshot and pilot record remain unchanged. Verification record: `artifacts/automation_verification_2026-11-19.json`. The optional S3 interface is tested with mocked responses only; external storage, credentials, machine/task validation and explicit activation remain outstanding.
+
+## 2026-11-18 — operational collection implementation, not activation
+
+Continued the manual pilot on `feature/automatic-forecasting`, preserving earlier uncommitted implementation work when the expanded task arrived. Initial inspection confirmed the designated prepared bundle's 36 hashes and replayed the November 11 pilot. The existing retrospective findings, 415 reserved identities, training snapshots, alpha 1 Ridge model, zero floor, five predictors and frozen 2027 protocol remain unchanged. Historical uncertainty against the five-session benchmark remains inconclusive.
+
+Added a single-tick collector using the verified pilot calculations, a transactional append-only journal with separate evidence directories, explicit failure/missing/late/interrupted records, six-price mature targets and independent verification. Original global session positions remain anchored to the historical request start; the frozen 2027 schedule position is recorded separately. Local records are candidates, not proof of prospective issue time. Added optional versioned S3 retention with checksum and server-time receipts; it is disabled and unconfigured here. Formal issuance refuses disabled retention, and no 2027 comparative calculations are allowed before January 10, 2028.
+
+The separate operational 2026 pilot begins November 12 and requires all five targets within 2026. Its descriptive sample uses the first valid forecast and first valid label per origin, disclosing late records; revised vintages remain sensitivity comparisons. The November 11 manual pilot is a separate sample and keeps its original late issue time. These operational pilot rules are not an amendment to the 2027 study. Exact rules: `docs/protocols/collection_protocol.md`.
+
+Selected a five-minute Windows Task Scheduler polling proposal for the installed environment, with application-level calendar decisions and strict timestamps. Generated a disabled XML file and validated its schema; did not register, enable or run a recurring task. A controlled artificial-data demonstration is distinct from real market evidence. Cloud credentials, bucket provisioning, a live retention check, host uptime/wake behavior and activation remain for review. Known official schedule disruptions block work pending an explicit reviewed amendment; no silent frozen-calendar override exists.
+
 ## PDF output retired
 
 At the user's request, removed the PDF/LaTeX generators, templates, optional rendering dependency and their dedicated tests. New EDA and diagnostic figures are PNG only; Markdown/CSV/JSON outputs and independent model verification remain. Small historical evidence moved to `docs/archive/historical/`. Existing frozen run artifacts were preserved. Earlier entries describing PDF editions remain historical records, not current build instructions.

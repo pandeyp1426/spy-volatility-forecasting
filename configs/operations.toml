@@ -1,0 +1,24 @@
+# Manual commands are safe to review; this configuration does not enable a task.
+[prepared]
+bundle = "artifacts/protocols/20261112T033437_prospective_121fb52e"
+freeze_record_sha256 = "f4802ee310ca641c31444ae9a54e7b581808b44e8d78bbbd6876f7bfd0620d03"
+model_sha256 = "b9fb8225931f0f0e0ce55a6862842baa011f6b0479b0250a54294331dd34a85c"
+
+[collection]
+store = "artifacts/operations"
+pilot_start = "2026-11-12"
+# Both pilot and formal origin windows require five targets in the same year.
+# Formal 2027 origin/issue/label/scoring rules come from the frozen bundle.
+
+[manual_pilot]
+path = "artifacts/pilots/20261112T050827_pilot_76608a08"
+record_sha256 = "efc37527c8043ab2a75fca08a99046a5b11fe93bdd0b3b1599d0f84529591124"
+
+[retention]
+mode = "disabled"
+# To activate after review: mode="s3", an existing private versioned bucket,
+# a unique prefix, region, and optional AWS profile. Never put credentials here.
+bucket = ""
+prefix = "spy-volatility/evidence"
+region = "us-east-1"
+# profile = "spy-research"

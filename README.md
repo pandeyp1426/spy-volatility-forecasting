@@ -45,6 +45,19 @@ For a single pilot using the designated frozen model and newly acquired complete
 
 This separate command creates `artifacts/pilots/`, retains unsuccessful attempts, and neither refits nor operates the 2027 evaluation. See [pilot results and offline replay](docs/pilot_forecast.md).
 
+The [operational collector](docs/operations.md) extends the pilot with durable attempts, matured outcomes, guarded scoring and optional versioned S3 retention. It is implemented but **not deployed**: no recurring task is enabled and external storage is disabled in the example configuration.
+
+```powershell
+# Inspect readiness without issuing a forecast
+.\.venv\Scripts\python.exe -m spy_volatility.workflows.operations check
+# Safe offline demonstration with artificial prices and a separate journal
+.\.venv\Scripts\python.exe -m spy_volatility.workflows.operations demo
+# One manual collection tick; creates real evidence when data are due
+.\.venv\Scripts\python.exe -m spy_volatility.workflows.operations cycle
+```
+
+Read [collection rules](docs/protocols/collection_protocol.md), [deployment and monitoring instructions](docs/operations.md), and the [technical progress summary](docs/results/automation_progress.md) before enabling anything. Formal 2027 issuance requires configured external retention; formal errors and summaries remain blocked until January 10, 2028.
+
 ## Project structure
 
 ```text
