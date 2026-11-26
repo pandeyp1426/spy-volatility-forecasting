@@ -1,0 +1,60 @@
+.rn-equation {
+  overflow-x: auto;
+  color: #d2f3ed;
+  font-size: 0.98rem;
+  background: #101a25;
+  border: 1px solid var(--stroke);
+  border-radius: 7px;
+  margin: 14px 0;
+  padding: 2px 10px;
+}
+.rn-example {
+  margin-top: 16px;
+}
+.rn-example strong {
+  color: #93dbce;
+}
+.rn-pipeline {
+  margin-top: 16px;
+}
+.rn-pipeline section {
+  border-top: 2px solid #57c9ab;
+  padding: 14px;
+  background: #122622;
+  border-radius: 6px;
+}
+.rn-pipeline section + section {
+  background: #162237;
+  border-color: #80a7e5;
+}
+.rn-pipeline h3,
+.rn-source {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rn-pipeline ol {
+  padding-left: 23px;
+  list-style: decimal;
+}
+.rn-pipeline li {
+  padding: 3px 0;
+}
+.rn-predictors {
+  padding-left: 20px;
+  list-style: decimal;
+}
+.rn-predictors li {
+  margin-top: 12px;
+}
+.rn-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+}
+.rn-page p {
+  font-size: 0.94rem;
+}
+.rn-page h3 {
+  margin: 0 0 8px;
+}

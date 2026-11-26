@@ -1,6 +1,40 @@
 # Forecast collection and operations
 
-The collector is implemented for manual ticks or an external scheduler. **No scheduler is registered or enabled. External storage is not configured.** Read the [collection rules](protocols/collection_protocol.md) before activation; the frozen [2027 protocol](protocols/prospective_protocol.md) remains authoritative.
+The research machine has a Windows task for eligible 2026 pilot forecasts. It was registered November 21, 2026 Central, with the first trigger November 23 at 3:05 p.m. Central. It requires a signed-in research user, a running machine and access to Yahoo Finance. External timestamp storage is unconfigured. The formal 2027 collector remains inactive. See the [collection rules](protocols/collection_protocol.md) and [frozen protocol](protocols/prospective_protocol.md).
+
+## Hosted 2026 pilot
+
+The GitHub-hosted Windows runner restores the frozen model, journal and archived inputs from the private `pandeyp1426/spy-volatility-pilot-evidence` repository. An eligible close produces one Ridge forecast and two benchmarks for daily-return volatility across the next five trading sessions. The runner persists the attempt in private Git, replays the evidence, and sends only the six public datasets and their manifest to the dashboard build. The site refreshes after the build and browser checks pass.
+
+**One-time handoff.** Merge the dashboard PR, then run this command from the research repository on the original Windows PC. It uses the authenticated GitHub CLI and the existing private checkout. It verifies the merged workflow, pauses the local task, transfers any subsequent journal events, enables the hosted schedule and requests the first deployment.
+
+```powershell
+.\scripts\activate_hosted_pilot.ps1 -EvidenceCheckout ..\pilot-evidence-seed-20261124
+```
+
+The `pilot-evidence` Actions environment allows only `main` and holds the private repository's write-enabled deploy key under `PILOT_EVIDENCE_SSH_KEY`. Set Pages' build source to GitHub Actions. Collection runs when the public repository variable `PILOT_HOSTED` is `true`. To recreate the seed on the research PC, run `.\.venv\Scripts\python.exe -m spy_volatility.workflows.hosted_pilot seed ..\new-private-seed` and push that checkout only to the private evidence repository.
+
+**Timing and retries.** Attempts are scheduled at 7 and 37 minutes past the hour during the regular two-hour window, with additional attempts after the November 27 early close. The NYSE calendar checks actual eligibility when the runner starts. The last eligible origin is December 23. A delay can miss an origin. The collector records issue times from its clock, and repeated runs reuse the original forecast.
+
+**Monitor or retry.** Inspect the [dashboard workflow runs](https://github.com/pandeyp1426/spy-volatility-forecasting/actions/workflows/dashboard.yml). To retry collection or a failed deployment, run `gh workflow run dashboard.yml --ref main`. Outside the issue window this replays existing evidence. The last successful site stays available if a new build fails. To pause hosted runs, use `gh variable set PILOT_HOSTED --body false` and let the current run finish. Restore the latest private checkpoint before switching collectors. The hosted journal supports pilot recovery. Formal 2027 retention uses the frozen protocol.
+
+### Local after-close pilot
+
+The task starts five minutes after each eligible NYSE close and retries every ten minutes within the two-hour issue window. The last eligible origin is December 23. Retries reuse an existing forecast for the same origin. The worker independently replays the stored forecast before writing a forecast-only projection under `artifacts/dashboard_pilot/`. Each projection is local to the research machine. The public exporter automatically selects verified original 2026 pilot forecasts. Outcomes still require an explicit event hash. The task does not acquire outcomes or score the model.
+
+```powershell
+# Run from the repository root. Inspect or pause the installed task.
+$pilotTask = 'SPY Volatility Lab - 2026 after-close pilots'
+Get-ScheduledTask -TaskName $pilotTask
+Get-ScheduledTaskInfo -TaskName $pilotTask
+Disable-ScheduledTask -TaskName $pilotTask
+# Re-enable a paused task
+Enable-ScheduledTask -TaskName $pilotTask
+# Install only on an unconfigured research host
+powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File scripts/register_dashboard_pilot.ps1
+# Collect the latest eligible completed session now. A late issuance is recorded as late.
+.\.venv\Scripts\python.exe -m spy_volatility.workflows.dashboard_pilot latest
+```
 
 Run commands from the directory containing `pyproject.toml`, using the existing Python 3.12 environment. Preserve `.venv`, `.tools/python`, all prepared artifacts and the original pilot. No new Python dependency is required for local operation; optional remote retention requires AWS CLI v2.
 
