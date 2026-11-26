@@ -269,7 +269,7 @@ class Operations:
         path = (self.root / item["path"]).resolve()
         if pilot.sha(path / "pilot_record.json") != item["record_sha256"]:
             raise ValueError("Original manual pilot record hash mismatch")
-        checked = pilot.replay(path)
+        checked = pilot.replay(path, bundle=self.bundle)
         original = json.loads((path / "pilot_record.json").read_text(encoding="utf-8"))
         forecast = checked["forecast"]
         context = self.context(forecast["forecast_session"])
@@ -482,10 +482,11 @@ class Operations:
         rows = self.store.records()
         for row in rows:
             if row["kind"] == "pilot_import":
-                path = Path(row["original_path"])
-                if pilot.sha(path / "pilot_record.json") != row["original_record_sha256"]:
+                manual = self.config["manual_pilot"]
+                path = self.root / manual["path"]
+                if not (pilot.sha(path / "pilot_record.json") == row["original_record_sha256"] == manual["record_sha256"]):
                     raise ValueError("Imported manual pilot changed")
-                pilot.replay(path)
+                pilot.replay(path, bundle=self.bundle)
             elif row["kind"] in ("forecast", "outcome"):
                 output = self.store.evidence_path(row["evidence_dir"])
                 if row["prepared"]["model_sha256"] != self.identity["model_sha256"] or pilot.sha(output / "model.json") != self.identity["model_sha256"]:

@@ -6,6 +6,8 @@ Ridge has lower aggregate temporal RMSE than both benchmarks, but dependence-awa
 
 ## Setup
 
+**SPY Volatility Lab** shows the SPY price, the latest five-session Ridge forecast, and its two volatility benchmarks on one page. The local preview includes verified 2026 pilots. The static release shows approved records. [Dashboard setup, preview and publication](dashboard/README.md)
+
 Run from the directory containing `pyproject.toml`. Use Python 3.12 for the pinned environment:
 
 ```powershell
@@ -45,7 +47,7 @@ For a single pilot using the designated frozen model and newly acquired complete
 
 This separate command creates `artifacts/pilots/`, retains unsuccessful attempts, and neither refits nor operates the 2027 evaluation. See [pilot results and offline replay](docs/pilot_forecast.md).
 
-The [operational collector](docs/operations.md) extends the pilot with durable attempts, matured outcomes, guarded scoring and optional versioned S3 retention. It is implemented but **not deployed**: no recurring task is enabled and external storage is disabled in the example configuration.
+The [operational collector](docs/operations.md) extends the pilot with durable attempts, matured outcomes, guarded scoring and optional versioned S3 retention. For 2026 after-close forecasts, the research PC can hand collection and website publication to GitHub Actions. The formal 2027 study requires its separate retention setup.
 
 ```powershell
 # Inspect readiness without issuing a forecast

@@ -1,0 +1,13 @@
+# Research release decisions. Each entry approves exactly one preserved forecast
+# by its content hash. An omitted 2026 outcome remains unpublished. Formal
+# forecasts require a verified timely retention receipt and cannot include an
+# outcome approval. Scientific records and release decisions are independent.
+schema_version = 1
+# Automatically release the original, independently replayed, live 2026 pilot
+# forecast for each origin. Outcomes and formal forecasts still require pins.
+automatic_2026_pilots = true
+
+[[forecasts]]
+origin = "2026-11-11"
+forecast_sha256 = "ffd0dea41d00d02933a54b6106e7cd972f68f8f628ef780e18909c7e3b095e27"
+outcome_sha256 = "6a650b9a70f550a76826c5de64593a7f04687c7a65f28bf6e623904a60492dc1"

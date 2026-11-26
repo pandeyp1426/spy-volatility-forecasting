@@ -1,0 +1,15 @@
+# Reviewed public status. Update these values when deployment evidence changes.
+reviewed_on = "2026-11-21"
+collector = "2026 local pilot task scheduled"
+formal = "Prepared"
+source = "docs/results/automation_progress.md"
+milestones = [
+  "Historical model comparison completed",
+  "Temporal sensitivity analysis completed",
+  "Bootstrap uncertainty analysis completed",
+  "Frozen Ridge model prepared",
+  "First manual forecast verified",
+  "Automatic forecasting workflow implemented",
+  "Public research dashboard developed",
+  "Formal 2027 protocol prepared"
+]

@@ -263,7 +263,7 @@ def run_pilot(config_path: str | Path) -> dict:
     return record
 
 
-def replay(output: str | Path) -> dict:
+def replay(output: str | Path, *, bundle: Path | None = None) -> dict:
     """Read-only recomputation, retaining the original acquisition and creation times."""
     output = Path(output).resolve()
     record = json.loads((output / "pilot_record.json").read_text(encoding="utf-8"))
@@ -275,8 +275,10 @@ def replay(output: str | Path) -> dict:
     config = tomllib.loads((output / "source/pilot.toml").read_text(encoding="utf-8"))
     if config != record["config"]:
         raise ValueError("Saved pilot configuration differs")
-    model, identity = load_prepared(Path(record["prepared"]["bundle_path"]), config["prepared"])
-    if identity != record["prepared"] or sha(output / "model.json") != identity["model_sha256"]:
+    original = record["prepared"]
+    model, identity = load_prepared(bundle or Path(original["bundle_path"]), config["prepared"])
+    # A relocated copy has the same pinned identity and a new filesystem path.
+    if {**identity, "bundle_path": original["bundle_path"]} != original or sha(output / "model.json") != identity["model_sha256"]:
         raise ValueError("Saved prepared model identity differs")
     schedule = pilot_schedule(datetime.fromisoformat(record["selection_time_utc"]))
     saved_schedule = pd.read_csv(output / "calendar.csv", index_col="session", parse_dates=["session", "market_open", "market_close"])

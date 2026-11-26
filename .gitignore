@@ -12,6 +12,15 @@ dist/
 
 # Local data and generated experiments (source and research notes stay tracked)
 data/
+!dashboard/public/data/
+dashboard/public/data/*
+!dashboard/public/data/manifest.json
+!dashboard/public/data/status.json
+!dashboard/public/data/history.json
+!dashboard/public/data/market.json
+!dashboard/public/data/market_preview.json
+!dashboard/public/data/observations.json
+!dashboard/public/data/forecasts.json
 artifacts/
 output/
 *.log
