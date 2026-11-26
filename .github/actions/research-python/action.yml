@@ -1,0 +1,27 @@
+name: Install the pinned research environment
+description: Use the same Windows Python distribution as the frozen-model research host.
+inputs:
+  directory:
+    description: Research checkout under the workflow workspace
+    required: false
+    default: '.'
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v7
+      with:
+        version: '0.12.18'
+        enable-cache: false
+    - shell: pwsh
+      working-directory: ${{ inputs.directory }}
+      run: |
+        $version = (Get-Content .python-version -Raw).Trim()
+        uv python install $version
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
+        uv venv --managed-python --python $version .venv
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
+        uv pip install --python .venv/Scripts/python.exe -r requirements-lock.txt
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
+        uv pip install --python .venv/Scripts/python.exe --no-deps -e .
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
+        (Resolve-Path .venv/Scripts).Path >> $env:GITHUB_PATH

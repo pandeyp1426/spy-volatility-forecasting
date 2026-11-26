@@ -59,6 +59,10 @@ class PilotEvidenceSeed:
                     or any(row["evidence_mode"] != "live" or row.get("context", {}).get("study")
                            not in (None, "pilot_2026") for row in records)):
                 raise ValueError("Expected the designated live 2026 pilot journal")
+            started = {row["attempt_id"] for row in records if row["kind"] == "attempt_started"}
+            sealed = {row["attempt_id"] for row in records if "artifact_sha256" in row}
+            if started - sealed:
+                raise ValueError("Recover the unfinished local attempt before transferring its evidence")
             for row in records:
                 if row.get("artifact_sha256"):
                     for name in row["artifact_sha256"]:
