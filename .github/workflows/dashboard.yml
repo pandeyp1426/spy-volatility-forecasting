@@ -1,7 +1,7 @@
 name: SPY Volatility Lab
 on:
   pull_request:
-    paths: ['dashboard/**', 'src/**', 'configs/**', 'tests/**', '.github/**', '.python-version', 'requirements-lock.txt', 'pyproject.toml']
+    paths: ['dashboard/**', 'src/**', 'configs/**', 'tests/**', 'scripts/activate_hosted_pilot.ps1', '.github/**', '.python-version', 'requirements-lock.txt', 'pyproject.toml']
   push:
     branches: [main]
     paths: ['dashboard/**', 'src/**', 'configs/**', '.github/**', '.python-version', 'requirements-lock.txt', 'pyproject.toml']

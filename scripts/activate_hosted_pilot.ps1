@@ -5,6 +5,11 @@ param(
     [string]$GitHubCLI = 'gh'
 )
 $ErrorActionPreference = 'Stop'
+if ($GitHubCLI -eq 'gh' -and -not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    $wingetCli = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\bin\gh.exe'
+    if (!(Test-Path -LiteralPath $wingetCli)) { throw 'Supply the installed gh.exe with -GitHubCLI.' }
+    $GitHubCLI = $wingetCli
+}
 $public = 'pandeyp1426/spy-volatility-forecasting'
 $private = 'pandeyp1426/spy-volatility-pilot-evidence'
 $taskName = 'SPY Volatility Lab - 2026 after-close pilots'

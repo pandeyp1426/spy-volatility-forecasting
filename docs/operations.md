@@ -9,7 +9,7 @@ The GitHub-hosted Windows runner restores the frozen model, journal and archived
 **One-time handoff.** Merge the dashboard PR, then run this command from the research repository on the original Windows PC. It uses the authenticated GitHub CLI and the existing private checkout. It verifies the merged workflow, pauses the local task, transfers any subsequent journal events, enables the hosted schedule and requests the first deployment.
 
 ```powershell
-.\scripts\activate_hosted_pilot.ps1 -EvidenceCheckout ..\pilot-evidence-seed-20261124
+powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\scripts\activate_hosted_pilot.ps1 -EvidenceCheckout ..\pilot-evidence-seed-20261124
 ```
 
 The `pilot-evidence` Actions environment allows only `main` and holds the private repository's write-enabled deploy key under `PILOT_EVIDENCE_SSH_KEY`. Set Pages' build source to GitHub Actions. Collection runs when the public repository variable `PILOT_HOSTED` is `true`. To recreate the seed on the research PC, run `.\.venv\Scripts\python.exe -m spy_volatility.workflows.hosted_pilot seed ..\new-private-seed` and push that checkout only to the private evidence repository.
