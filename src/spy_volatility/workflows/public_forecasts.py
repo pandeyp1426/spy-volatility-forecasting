@@ -16,12 +16,14 @@ import re
 import sqlite3
 import tomllib
 
+import numpy as np
 import pandas as pd
 
 from spy_volatility.core.data import get_snapshot
 from spy_volatility.core.models import FEATURE_COLUMNS
 from spy_volatility.core.outcomes import forecast_errors, realized_volatility, study_for
 from spy_volatility.infrastructure.forecast_store import canonical
+from spy_volatility.verification.base import ATOL, RTOL
 from spy_volatility.workflows import pilot
 
 
@@ -68,6 +70,17 @@ def _snapshot(directory, record):
     return prices, metadata["retrieved_at_utc"]
 
 
+def _pilot_replay_matches(verified, stored):
+    """The five-term Ridge dot product can round differently across BLAS kernels."""
+    estimates = verified["predictions"].copy()
+    for key in ("ridge", "ridge_raw"):
+        issued = stored["predictions"].get(key)
+        if type(issued) not in (float, int) or not np.isclose(estimates[key], issued, rtol=RTOL, atol=ATOL):
+            return False
+        estimates[key] = issued
+    return {**verified, "predictions": estimates} == stored
+
+
 def _replay_forecast(root, store, config, model, identity, event):
     directory = _evidence(store, event)
     record = event
@@ -96,7 +109,14 @@ def _replay_forecast(root, store, config, model, identity, event):
     schedule = pilot.pilot_schedule(selected.to_pydatetime())
     prices, acquired = _snapshot(directory, record)
     verified, _, _ = pilot.calculate(prices, model, schedule)
-    if verified != record["forecast"] or verified != event["forecast"]:
+    stored = record["forecast"]
+    if stored != event["forecast"]:
+        raise ValueError("Approved journal forecast differs from the original record")
+    if study_for(verified["forecast_session"], verified["target_sessions"]) == "pilot_2026":
+        matches = _pilot_replay_matches(verified, stored)
+    else:
+        matches = verified == stored
+    if not matches:
         raise ValueError("Public replay differs from the approved forecast")
     close = schedule.market_close.iloc[20]
     if not close < selected <= pd.Timestamp(record["acquisition_started_at_utc"]) <= pd.Timestamp(acquired) <= issued:
@@ -110,7 +130,7 @@ def _replay_forecast(root, store, config, model, identity, event):
             or pd.Timestamp(context["scheduled_close_utc"]) != close
             or pd.Timestamp(context["issue_deadline_utc"]) != close + pd.Timedelta(hours=2)):
         raise ValueError("Forecast origin, targets or deadlines differ from the verified calendar")
-    return verified, acquired
+    return stored, acquired
 
 
 def _pilot_outcome(db, store, approval, event, forecast):

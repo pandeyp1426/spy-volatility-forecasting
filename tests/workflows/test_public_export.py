@@ -1,6 +1,7 @@
 """Protect the public release boundary independently of browser rendering."""
 import hashlib
 import json
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
@@ -17,6 +18,22 @@ def approvals(root, extra):
     config = root / "configs"
     config.mkdir()
     (config / "public_forecasts.toml").write_text("schema_version = 1\n" + extra)
+
+
+def test_pilot_replay_allows_ridge_roundoff_and_preserves_issued_values():
+    stored = {"predictions": {"ridge": .0224, "ridge_raw": .0224, "baseline": .01},
+              "floor_applied": False, "feature_order": ["log_return"]}
+    rounded = math.nextafter(.0224, 0)
+    verified = {**stored, "predictions": {**stored["predictions"], "ridge": rounded, "ridge_raw": rounded}}
+    assert forecasts._pilot_replay_matches(verified, stored)
+    assert stored["predictions"]["ridge"] == .0224
+    assert verified["predictions"]["ridge"] == rounded
+    for key, value in (("ridge", .0225), ("ridge_raw", float("nan")),
+                       ("baseline", math.nextafter(.01, 0))):
+        changed = {**verified, "predictions": {**verified["predictions"], key: value}}
+        assert not forecasts._pilot_replay_matches(changed, stored)
+    assert not forecasts._pilot_replay_matches({**verified, "floor_applied": True}, stored)
+    assert not forecasts._pilot_replay_matches({**verified, "feature_order": []}, stored)
 
 
 def test_formal_outcome_approval_rejected_even_without_database(tmp_path):
