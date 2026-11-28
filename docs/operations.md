@@ -1,5 +1,25 @@
 # Forecast collection and operations
 
+## November 27 collector correction (separate review branch)
+
+The hosted GitHub schedules missed the November 27 early-close window. The calendar and two-hour deadline were correct; Actions materialized runs too late. The wrapper also returned before recording missing sessions or collecting matured labels. See [the diagnosis and verification record](results/collector_review_2026-11-27.md). The proposed replacement uses one persistent Windows writer and Actions for private-checkpoint replay and Pages publication. It remains pending merge and activation; the old local task remains disabled.
+
+`operations pilot-cycle` retains missed-session records and matured outcomes even outside the issue window, without issuing retrospective forecasts. `hosted_pilot tick` reports new forecast/outcome/missing counts separately. Full private replay precedes public export. Missing dates are published even if the latest forecast is unchanged. Pilot outcomes remain subject to explicit release approval. No formal outcome or score is automatically published.
+
+After this branch is reviewed and merged, switch the research checkout to clean, updated `main` and run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File scripts/activate_pilot_service.ps1 -EvidenceCheckout ..\pilot-evidence-seed-20261124 -WorkerRoot ..\pilot-worker
+```
+
+The command verifies merged source and private visibility, creates a separate pinned worker checkout, mounts the private evidence, sets `PILOT_WRITER=windows`, and refuses activation while any old hosted job remains active. If a job is active, wait and rerun. It leaves the original local task disabled. The new task polls every five minutes, uses `IgnoreNew`, and holds an OS lock over the complete pull/collect/checkpoint/replay/dispatch transaction. Git push must succeed before publication; divergent journals are never merged or overwritten. Failed push attempts preserve local evidence for retry. Only the configured writer may collect.
+
+The research PC must stay powered, signed in and connected. The pilot task expires January 2, 2027, after the last pilot label deadline. Keep `PILOT_HOSTED=true` so Actions can publish; `PILOT_WRITER=windows` makes its collection step skip. An external scheduler that merely dispatches Actions would still depend on runner queues and is not a reliable issuance fix. Do not enable simultaneous independent local and hosted writers. To roll back, disable and drain the Windows task, checkpoint its state, then change the writer variable; GitHub cron still cannot promise the deadline.
+
+Monitor the local task `SPY Volatility Lab - persistent pilot`, logs under the worker's `output/pilot_invocations/`, and the separate Actions collection/verification/deployment summaries. At the next eligible close, November 30, 2026 at 3 p.m. Central, verify one original on-time record containing all three methods, a private checkpoint, passed replay, and the identical origin, event ID and actual issue timestamp in Pages. The deadline stays 5 p.m. Central. November 20's fifth target also closes that day; outcome acquisition must be strictly later.
+
+Formal activation is separate: follow [the 2027 runtime, S3 receipt and scheduler checklist](formal_2027_activation.md). AWS CLI, bucket/profile and genuine S3 receipt are not configured or verified on this machine. The sections below retain the earlier deployment history and manual commands.
+
 The research machine has a Windows task for eligible 2026 pilot forecasts. It was registered November 21, 2026 Central, with the first trigger November 23 at 3:05 p.m. Central. It requires a signed-in research user, a running machine and access to Yahoo Finance. External timestamp storage is unconfigured. The formal 2027 collector remains inactive. See the [collection rules](protocols/collection_protocol.md) and [frozen protocol](protocols/prospective_protocol.md).
 
 ## Hosted 2026 pilot

@@ -6,6 +6,22 @@ import type { Forecast } from "../src/types/public";
 const approved: Forecast[] = JSON.parse(readFileSync("public/data/forecasts.json", "utf8")).data.rows;
 const latest = approved[0];
 
+test("missed sessions remain visible without replacing the original forecast", async ({page}) => {
+  const manifest = JSON.parse(readFileSync("public/data/manifest.json", "utf8"));
+  const status = JSON.parse(readFileSync("public/data/status.json", "utf8"));
+  status.data.collection = {missed_origins: ["2026-11-27"], missed_outcome_origins: []};
+  const body = JSON.stringify(status);
+  manifest.datasets.status.sha256 = createHash("sha256").update(body).digest("hex");
+  await page.route("**/data/manifest.json", route => route.fulfill({contentType: "application/json", body: JSON.stringify(manifest)}));
+  await page.route("**/data/status.json", route => route.fulfill({contentType: "application/json", body}));
+  await page.goto("./");
+  const missed = page.getByText("1 pilot sessions have no on-time forecast");
+  await expect(missed).toBeVisible();
+  await missed.click();
+  await expect(page.getByText("2026-11-27", {exact: true})).toBeVisible();
+  await expect(page.locator(".ridge dd")).toHaveText(latest.predictions_pct.ridge.toFixed(3) + "%");
+});
+
 test("the public ticker keeps its dark backing and fits its card", async ({page}) => {
   await page.route("**/embed-widget/single-quote/**", route => route.fulfill({
     contentType: "text/html", body: '<body style="color:white;background:transparent">SPY quote</body>',

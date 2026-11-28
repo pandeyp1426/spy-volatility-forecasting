@@ -36,8 +36,7 @@ class S3Retention:
     def retain(self, archive: Path, event_hash: str) -> dict:
         if not self.enabled:
             return {"status": "not_configured", "server_timestamp_verified": False}
-        if self.call("get-bucket-versioning").get("Status") != "Enabled":
-            raise ValueError("External evidence bucket must have versioning Enabled")
+        self.preflight()
         digest = sha(archive)
         checksum = base64.b64encode(bytes.fromhex(digest)).decode()
         key = self.config["prefix"].strip("/") + "/" + event_hash + ".zip"
@@ -65,3 +64,16 @@ class S3Retention:
                 "server_last_modified_utc": modified.tz_convert("UTC").isoformat(),
                 "server_timestamp_verified": True, "checksum_verified": True,
                 "limitations": "Proves this archived version existed by S3 LastModified, not provider publication time; protect version deletion with IAM/Object Lock"}
+
+    def preflight(self):
+        if not self.enabled:
+            raise ValueError("S3 retention is disabled")
+        if self.call("get-bucket-versioning").get("Status") != "Enabled":
+            raise ValueError("External evidence bucket must have versioning Enabled")
+        block = self.call("get-public-access-block").get("PublicAccessBlockConfiguration", {})
+        if not all(block.get(k) is True for k in (
+                "BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets")):
+            raise ValueError("Evidence bucket must block all public access")
+        if self.call("get-bucket-policy-status").get("PolicyStatus", {}).get("IsPublic") is not False:
+            raise ValueError("Evidence bucket policy must be explicitly private")
+        return {"versioning": "Enabled", "public_access_blocked": True, "policy_public": False}

@@ -261,3 +261,26 @@ def read_forecasts(root: Path) -> list[dict]:
             approvals = [*approvals, *automatic_pilot_approvals(db, {day.isoformat() for day in seen})]
         rows = [_release(db, root, store, config, model, identity, approval) for approval in approvals]
     return sorted(rows, key=lambda r: (r["origin"], r["issued_at_utc"]), reverse=True)
+
+
+def read_coverage(root: Path) -> dict:
+    """Release only authenticated pilot missingness metadata, never formal labels."""
+    config = tomllib.loads((root / "configs/operations.toml").read_text(encoding="utf-8"))
+    database = root / config["collection"]["store"] / "journal.sqlite3"
+    result = {"missed_origins": [], "missed_outcome_origins": []}
+    if not database.is_file():
+        return result
+    with closing(sqlite3.connect(database.as_uri() + "?mode=ro", uri=True)) as db:
+        db.execute("BEGIN")
+        for kind, key in (("forecast_missing", "missed_origins"), ("outcome_missing", "missed_outcome_origins")):
+            rows = db.execute("""SELECT event_hash, json_extract(payload, '$.context.origin') FROM events
+                WHERE json_extract(payload, '$.kind') = ?
+                  AND json_extract(payload, '$.context.study') = 'pilot_2026'
+                  AND json_extract(payload, '$.evidence_mode') = 'live' ORDER BY sequence""", (kind,)).fetchall()
+            for digest, origin in rows:
+                _event(db, digest, origin, (kind,), "missing")
+                if not origin.startswith("2026-"):
+                    raise ValueError("Invalid pilot missingness origin")
+                result[key].append(origin)
+            result[key] = sorted(set(result[key]))
+    return result

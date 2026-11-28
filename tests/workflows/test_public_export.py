@@ -36,6 +36,18 @@ def test_pilot_replay_allows_ridge_roundoff_and_preserves_issued_values():
     assert not forecasts._pilot_replay_matches({**verified, "feature_order": []}, stored)
 
 
+def test_coverage_releases_only_authenticated_pilot_missing_dates(tmp_path):
+    from spy_volatility.infrastructure.forecast_store import ForecastStore
+    (tmp_path / "configs").mkdir()
+    (tmp_path / "configs/operations.toml").write_text('[collection]\nstore="state"')
+    store = ForecastStore(tmp_path / "state")
+    for year in (2026, 2027):
+        store.append({"kind": "forecast_missing", "status": "missing", "evidence_mode": "live",
+                      "context": {"origin": f"{year}-11-27", "study": f"pilot_{year}" if year == 2026 else "formal_2027"},
+                      "private": "MUST_NOT_RELEASE"})
+    assert forecasts.read_coverage(tmp_path) == {"missed_origins": ["2026-11-27"], "missed_outcome_origins": []}
+
+
 def test_formal_outcome_approval_rejected_even_without_database(tmp_path):
     approvals(tmp_path, '[[forecasts]]\norigin="2027-01-04"\nforecast_sha256="' + "1"*64 +
               '"\noutcome_sha256="' + "2"*64 + '"')
@@ -146,6 +158,7 @@ def test_consistent_release_with_fixed_timestamp(tmp_path,monkeypatch):
     monkeypatch.setattr(exporter,"market_history",lambda root:{"rows":[{"date":"2025-12-31"}],"acquired_at":TIME.isoformat()})
     monkeypatch.setattr(exporter,"load_history",lambda root:{"observations":[],"sources":[{"run_id":"test"}],"coverage":{"start":None,"end":None}})
     monkeypatch.setattr(exporter,"read_forecasts",lambda root:[])
+    monkeypatch.setattr(exporter,"read_coverage",lambda root:{"missed_origins":[],"missed_outcome_origins":[]})
     first=exporter.export(tmp_path,now=TIME)
     assert first==exporter.export(tmp_path,now=TIME)
     for entry in first["datasets"].values():

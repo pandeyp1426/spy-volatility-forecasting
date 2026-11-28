@@ -1,7 +1,7 @@
 name: SPY Volatility Lab
 on:
   pull_request:
-    paths: ['dashboard/**', 'src/**', 'configs/**', 'tests/**', 'scripts/activate_hosted_pilot.ps1', '.github/**', '.python-version', 'requirements-lock.txt', 'pyproject.toml']
+    paths: ['dashboard/**', 'src/**', 'configs/**', 'tests/**', 'scripts/**', '.github/**', '.python-version', 'requirements-lock.txt', 'pyproject.toml']
   push:
     branches: [main]
     paths: ['dashboard/**', 'src/**', 'configs/**', '.github/**', '.python-version', 'requirements-lock.txt', 'pyproject.toml']
@@ -24,7 +24,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/research-python
       - name: Check collection windows and release boundaries
-        run: python -m pytest -q tests/workflows/test_dashboard_pilot.py tests/workflows/test_hosted_pilot.py tests/workflows/test_public_export.py tests/workflows/test_public_history.py
+        run: python -m pytest -q tests/workflows/test_dashboard_pilot.py tests/workflows/test_hosted_pilot.py tests/workflows/test_pilot_service.py tests/workflows/test_retention_probe.py tests/workflows/test_operations.py tests/workflows/test_public_export.py tests/workflows/test_public_history.py tests/infrastructure/test_retention.py
   gate:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.PILOT_HOSTED == 'true'
     runs-on: ubuntu-latest
@@ -66,12 +66,14 @@ jobs:
           }
       - name: Collect eligible completed session
         id: tick
+        if: vars.PILOT_WRITER != 'windows'
         working-directory: app
         run: |
           python -m spy_volatility.workflows.hosted_pilot tick 2> "$env:RUNNER_TEMP/pilot-error.log"
           if ($LASTEXITCODE) { throw 'Collection failed. Inspect the checkpointed private attempt.' }
       - name: Persist private evidence before release
-        if: "!cancelled() && (steps.tick.outcome == 'success' || steps.tick.outcome == 'failure')"
+        id: checkpoint
+        if: "!cancelled() && vars.PILOT_WRITER != 'windows' && (steps.tick.outcome == 'success' || steps.tick.outcome == 'failure')"
         working-directory: state
         run: |
           git add -- artifacts/operations/journal.sqlite3 artifacts/operations/pilot_2026
@@ -82,6 +84,17 @@ jobs:
           git -c user.name=pilot-collector -c user.email=pilot-collector@users.noreply.github.com commit -q -m "Checkpoint 2026 pilot evidence"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           git push -q origin HEAD:main
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Replay entire private journal
+        id: verify
+        working-directory: app
+        run: |
+          python -m spy_volatility.workflows.hosted_pilot verify 2> "$env:RUNNER_TEMP/verify-error.log"
+          if ($LASTEXITCODE) { throw 'Private journal replay failed.' }
+          "## Verification`n`nPrivate journal and numerical replay passed." >> $env:GITHUB_STEP_SUMMARY
+          if ('${{ vars.PILOT_WRITER }}' -eq 'windows') {
+            "## Collection`n`nExternal Windows scheduler owns issuance. This job created no forecast; it restored the private checkpoint." >> $env:GITHUB_STEP_SUMMARY
+          }
       - name: Replay and project public fields
         id: export
         working-directory: app
@@ -91,6 +104,7 @@ jobs:
           $result = python -m spy_volatility.workflows.hosted_pilot release @flags 2> "$env:RUNNER_TEMP/replay-error.log"
           if ($LASTEXITCODE -or $result -notin 'current','publish') { throw 'Public replay failed.' }
           "release=$result" >> $env:GITHUB_OUTPUT
+          "## Publication preparation`n`n$result (deployment is reported separately)." >> $env:GITHUB_STEP_SUMMARY
       - uses: actions/upload-artifact@v4
         if: steps.export.outputs.release == 'publish'
         with:
@@ -144,3 +158,18 @@ jobs:
       - name: Publish approved static build
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Report deployment
+        run: echo 'Deployment succeeded. ${{ steps.deployment.outputs.page_url }}' >> "$GITHUB_STEP_SUMMARY"
+  report:
+    if: always() && github.event_name != 'pull_request'
+    needs: [gate, collect, check, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Distinguish collection, verification and deployment
+        run: |
+          echo "Pilot writer: ${{ vars.PILOT_WRITER || 'github' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Private checkpoint/replay job: ${{ needs.collect.result }}' >> "$GITHUB_STEP_SUMMARY"
+          echo "Publication decision: ${{ needs.collect.outputs.release || 'none' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Dashboard checks: ${{ needs.check.result }}' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Pages deployment: ${{ needs.deploy.result }}' >> "$GITHUB_STEP_SUMMARY"
+          echo 'A successful run with no forecast is maintenance, not successful issuance.' >> "$GITHUB_STEP_SUMMARY"

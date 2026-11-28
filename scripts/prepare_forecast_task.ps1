@@ -1,16 +1,22 @@
 # Build an XML proposal only. No task registration, enabling or execution.
 [CmdletBinding()]
-param([string]$OutputPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'artifacts\scheduler_review\SPY-Volatility.xml'))
+param(
+    [string]$OutputPath = '',
+    [string]$Config = '',
+    [ValidateSet('cycle','formal-cycle')][string]$Action = 'cycle'
+)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
+if (!$OutputPath) { $OutputPath = Join-Path $projectRoot 'artifacts\scheduler_review\SPY-Volatility.xml' }
+if (!$Config) { $Config = Join-Path $projectRoot 'configs\operations.toml' }
 $runner = Join-Path $PSScriptRoot 'run_forecast_cycle.ps1'
-$configPath = Join-Path $projectRoot 'configs\operations.toml'
+$configPath = [System.IO.Path]::GetFullPath($Config)
 $destination = [System.IO.Path]::GetFullPath($OutputPath)
 if (Test-Path -LiteralPath $destination) {
     throw 'The proposal already exists. Choose a new OutputPath; prior proposals are preserved.'
 }
 $accountSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-$arguments = '-NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -WindowStyle Hidden -File "' + $runner + '" -Config "' + $configPath + '"'
+$arguments = '-NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -WindowStyle Hidden -File "' + $runner + '" -Config "' + $configPath + '" -Action ' + $Action
 # Construct a file directly: even creating CIM task objects can require access
 # to Task Scheduler's service. This preparation never contacts that service.
 $escapedCommand = [System.Security.SecurityElement]::Escape("$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe")
