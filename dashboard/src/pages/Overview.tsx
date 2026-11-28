@@ -3,12 +3,15 @@ import { useForecasts } from "../services/forecasts";
 import { ForecastReport } from "../models/ForecastReport";
 import { eastern, session } from "../services/format";
 import { MarketQuote } from "../components/MarketQuote";
+import { useDataset } from "../services/data";
 const Market = lazy(() => import("./Market"));
 const Performance = lazy(() => import("./Performance"));
 const ForecastBreakdown = lazy(() => import("../components/Forecast").then(module => ({default: module.ForecastBreakdown})));
 
 export default function Overview() {
   const forecasts = useForecasts();
+  const status = useDataset("status");
+  const missing = status.data?.collection?.missed_origins ?? [];
   const [selected, setSelected] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const rows = forecasts.data?.rows ?? [];
@@ -17,6 +20,11 @@ export default function Overview() {
   return (
     <>
       <MarketQuote />
+      {missing.length > 0 && <details className="forecast-card">
+        <summary>{missing.length} pilot sessions have no on-time forecast</summary>
+        <p>{missing.join(", ")}</p>
+        <p>Missed sessions remain missing. Any late diagnostic keeps its actual issue time.</p>
+      </details>}
       <section className="forecast-card" aria-labelledby="forecast-title">
         <header className="research-head">
           <h2 id="forecast-title">Five-session forecast</h2>

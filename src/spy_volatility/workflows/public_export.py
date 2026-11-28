@@ -13,7 +13,7 @@ import pandas as pd
 
 from spy_volatility.core.data import get_snapshot
 from spy_volatility.core.research import build_predictors
-from spy_volatility.workflows.public_forecasts import read_forecasts
+from spy_volatility.workflows.public_forecasts import read_forecasts, read_coverage
 from spy_volatility.workflows.public_history import load_history
 
 PRICE_SHA = "2e65e0a45ec8e6bc81339f2fe3f07a3069c905f8e613e7eda723cb96121e16bf"
@@ -49,6 +49,7 @@ def export(root: Path, *, now=None) -> dict:
     forecasts = read_forecasts(root)
     config = tomllib.loads((root / "configs/public_status.toml").read_text(encoding="utf-8"))
     status = {key: config[key] for key in ("reviewed_on", "collector", "formal", "milestones")}
+    status["collection"] = read_coverage(root)
     datasets = {}
 
     def add(key, payload, source, units, start, end):

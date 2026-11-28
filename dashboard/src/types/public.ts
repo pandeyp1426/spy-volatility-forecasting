@@ -81,6 +81,10 @@ const status = z
     collector: z.string(),
     formal: z.string(),
     milestones: z.array(z.string()),
+    collection: z.object({
+      missed_origins: z.array(day),
+      missed_outcome_origins: z.array(day),
+    }).strict().optional(),
   })
   .strict();
 export const schemas = {

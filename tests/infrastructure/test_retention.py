@@ -18,6 +18,7 @@ class FakeS3:
         self.version = "preserved-version-1"
         self.corrupt = False
         self.already_exists = False
+        self.private = True
 
     def __call__(self, cmd, **options):
         assert options["check"] and options["timeout"] == 120
@@ -26,6 +27,11 @@ class FakeS3:
         operation = cmd[2]
         if operation == "get-bucket-versioning":
             value = {"Status": "Enabled" if self.enabled else "Suspended"}
+        elif operation == "get-public-access-block":
+            value = {"PublicAccessBlockConfiguration": dict.fromkeys(
+                ("BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets"), self.private)}
+        elif operation == "get-bucket-policy-status":
+            value = {"PolicyStatus": {"IsPublic": not self.private}}
         elif operation == "put-object":
             assert cmd[cmd.index("--if-none-match") + 1] == "*"
             if self.already_exists:
@@ -54,16 +60,18 @@ def test_version_checksum_server_timestamp_and_conditional_write(tmp_path):
     assert receipt["archive_sha256"] == sha(archive)
     assert receipt["version_id"] == fake.version
     assert receipt["server_last_modified_utc"] == "2026-11-12T21:05:01+00:00"
-    assert len(fake.calls) == 3
+    assert len(fake.calls) == 5
 
 
-@pytest.mark.parametrize("bad", ["versioning", "null_version", "checksum"])
+@pytest.mark.parametrize("bad", ["versioning", "null_version", "checksum", "public"])
 def test_incomplete_external_evidence_is_not_accepted(tmp_path, bad):
     archive, fake, adapter = setup(tmp_path)
     if bad == "versioning":
         fake.enabled = False
     elif bad == "null_version":
         fake.version = "null"
+    elif bad == "public":
+        fake.private = False
     else:
         fake.corrupt = True
     with pytest.raises(ValueError):
@@ -75,7 +83,7 @@ def test_retry_recovers_same_version_without_overwriting(tmp_path):
     fake.already_exists = True
     receipt = adapter.retain(archive, "e" * 64)
     assert receipt["version_id"] == "preserved-version-1"
-    assert len(fake.calls) == 4
+    assert len(fake.calls) == 6
 
 
 def test_unconfigured_retention_never_invokes_external_command(tmp_path):

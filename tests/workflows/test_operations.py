@@ -208,6 +208,82 @@ def test_downtime_missing_records_are_idempotent_and_not_backfilled(environment)
     assert len(worker.rows("forecast")) == 1
 
 
+@pytest.mark.parametrize("instant,origin", [
+    ("2026-11-25T21:05Z", "2026-11-25"),
+    ("2026-11-26T21:05Z", None),
+    ("2026-11-27T18:00Z", None),
+    ("2026-11-27T18:05Z", "2026-11-27"),
+    ("2026-11-27T20:00Z", "2026-11-27"),
+    ("2026-11-27T20:00:01Z", None),
+    ("2026-11-28T01:26:42Z", None),
+    ("2027-01-04T21:05Z", None),
+])
+def test_scheduled_pilot_does_not_backfill_and_retries_are_idempotent(environment, instant, origin):
+    worker, market, _ = environment
+    market.instant = pd.Timestamp(instant)
+    first = worker.execute("pilot-cycle")
+    records = emitted(first, "forecast")
+    assert [r["context"]["origin"] for r in records] == ([origin] if origin else [])
+    assert all(r["timing_status"] == "local_on_time" for r in records)
+    calls = market.calls
+    again = worker.execute("pilot-cycle")
+    assert not emitted(again, "forecast") and not emitted(again, "forecast_missing")
+    assert market.calls == calls
+    assert all(r["context"]["study"] == "pilot_2026" for r in worker.rows("forecast_missing"))
+    if instant == "2026-11-28T01:26:42Z":
+        assert "2026-11-27" in {r["context"]["origin"] for r in worker.rows("forecast_missing")}
+
+
+def test_scheduled_pilot_links_maturity_only_after_fifth_target_and_does_not_score(environment):
+    worker, market, _ = environment
+    market.instant = pd.Timestamp("2026-11-20T21:05Z")
+    forecast = emitted(worker.execute("pilot-cycle"), "forecast")[0]
+    assert forecast["context"]["target_sessions"] == ["2026-11-23", "2026-11-24", "2026-11-25", "2026-11-27", "2026-11-30"]
+    market.instant = pd.Timestamp("2026-11-30T21:00Z")
+    worker.execute("pilot-cycle")
+    assert not worker.rows("outcome")
+    market.instant += pd.Timedelta(minutes=5)
+    label = emitted(worker.execute("pilot-cycle"), "outcome")[0]
+    assert label["forecast_attempt_id"] == forecast["attempt_id"]
+    assert label["context"] == forecast["context"]
+    assert not worker.rows("comparison")
+    assert worker.execute("verify")[0]["status"] == "passed"
+
+
+def test_overlapping_scheduled_workers_preserve_single_original(environment):
+    worker, market, _ = environment
+    worker.execute("check")
+    worker.store = ForecastStore(worker.store_path)
+    with worker.store.exclusive():
+        assert worker.execute("pilot-cycle")[0]["status"] == "busy"
+    worker.execute("pilot-cycle")
+    worker.execute("pilot-cycle")
+    assert len(worker.rows("forecast")) == 1
+    assert worker.execute("verify")[0]["status"] == "passed"
+
+
+@pytest.mark.parametrize("instant,origin", [
+    ("2026-12-31T21:05Z", None),
+    ("2027-01-01T21:05Z", None),
+    ("2027-01-04T21:00Z", None),
+    ("2027-01-04T21:05Z", "2027-01-04"),
+    ("2027-11-26T18:05Z", "2027-11-26"),
+    ("2027-11-26T20:01Z", None),
+    ("2027-12-27T21:05Z", None),
+])
+def test_separate_formal_scheduled_scope_rollover_early_close_and_missing(environment, instant, origin):
+    old, market, _ = environment
+    config = old.config_path
+    config.write_text(config.read_text().replace('[collection]', '[collection]\nstudy="formal_2027"'))
+    worker = operations.Operations(config, clock=market.now, acquire=market.acquire,
+                                  store_path=old.store_path, evidence_mode="synthetic_demo")
+    market.instant = pd.Timestamp(instant)
+    results = worker.execute("formal-cycle")
+    assert [r["context"]["origin"] for r in emitted(results, "forecast")] == ([origin] if origin else [])
+    assert all(r["context"]["study"] == "formal_2027" for r in worker.rows("forecast_missing"))
+    assert not worker.rows("comparison") and not worker.rows("pilot_import")
+
+
 def test_formal_outcomes_are_archived_but_not_scored_or_displayed_early(environment, monkeypatch):
     worker, market, _ = environment
     market.instant = pd.Timestamp("2027-01-04T21:05:00Z")

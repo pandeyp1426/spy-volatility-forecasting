@@ -7,14 +7,15 @@ import json
 from pathlib import Path
 import shutil
 import sqlite3
+import os
 import tempfile
 from urllib.error import URLError
 from urllib.request import urlopen
 
 from spy_volatility.infrastructure.forecast_store import ForecastStore
-from spy_volatility.workflows import dashboard_pilot, pilot, public_export, public_history
+from spy_volatility.workflows import pilot, public_export, public_history
 from spy_volatility.workflows.operations import Operations
-from spy_volatility.workflows.public_forecasts import read_forecasts
+from spy_volatility.workflows.public_forecasts import read_forecasts, read_coverage
 
 
 PUBLISHED = "https://pandeyp1426.github.io/spy-volatility-forecasting/data/forecasts.json"
@@ -118,7 +119,7 @@ class PilotEvidenceSeed:
         return local[-1]["event_hash"]
 
 
-def collect(root):
+def restored_operations(root):
     ops = Operations(root / "configs/operations.toml")
     if not (ops.store_path / "journal.sqlite3").is_file():
         raise FileNotFoundError("Restore the private pilot journal before collection")
@@ -129,16 +130,41 @@ def collect(root):
             or identity.get("config_sha256") != ops.config_hash):
         raise ValueError("Private pilot journal does not match the designated configuration")
     ForecastStore(ops.store_path).records()
-    return dashboard_pilot.collect(ops.config_path)
+    return ops
+
+
+def collect(root):
+    ops = restored_operations(root)
+    results = ops.execute("pilot-cycle")
+    failed = any(r.get("status") in {"failed", "invalid", "busy", "interrupted"}
+                 or r.get("external_retention_status") == "failed" for r in results)
+    issued = [r for r in results if r.get("kind") == "forecast"]
+    return {"status": "failed" if failed else "forecast_created" if issued else "no_forecast",
+            "forecast_status": results[0].get("status"), "new_forecasts": len(issued),
+            "new_outcomes": sum(r.get("kind") == "outcome" for r in results),
+            "new_missing": sum(r.get("kind") == "forecast_missing" for r in results),
+            "origin": issued[0]["context"]["origin"] if issued else None,
+            "issued_at_utc": issued[0]["issued_at_utc"] if issued else None}
+
+
+def verify(root):
+    result, = restored_operations(root).execute("verify")
+    if result.get("status") != "passed":
+        raise ValueError("Private evidence replay failed")
+    return result
 
 
 def release(root, *, only_changed=False):
     if only_changed:
         rows = read_forecasts(root)
+        coverage = read_coverage(root)
         try:
             with urlopen(PUBLISHED, timeout=15) as response:
                 published = json.load(response)
-            if published.get("dataset") == "forecasts" and published.get("data", {}).get("rows") == rows:
+            with urlopen(PUBLISHED.replace("forecasts.json", "status.json"), timeout=15) as response:
+                status = json.load(response)
+            if (published.get("dataset") == "forecasts" and published.get("data", {}).get("rows") == rows
+                    and status.get("data", {}).get("collection") == coverage):
                 return False
         except (URLError, TimeoutError, ValueError):
             pass  # Initial deployment or an unavailable site. Rebuild from verified evidence.
@@ -152,6 +178,7 @@ def main():
     commands.add_parser("seed").add_argument("destination", type=Path)
     commands.add_parser("handoff").add_argument("checkout", type=Path)
     commands.add_parser("tick")
+    commands.add_parser("verify")
     publish = commands.add_parser("release")
     publish.add_argument("--only-changed", action="store_true")
     args = parser.parse_args()
@@ -165,7 +192,15 @@ def main():
         with tempfile.TemporaryDirectory(prefix="pilot-handoff-") as scratch:
             print(PilotEvidenceSeed(root, Path(scratch) / "seed").advance_checkout(checkout))
     elif args.action == "tick":
-        print(collect(root)["status"])
+        result = collect(root)
+        print(json.dumps(result))
+        if os.environ.get("GITHUB_STEP_SUMMARY"):
+            with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+                summary.write("\n### Collection\n\n" + "\n".join(f"- {k}: {v}" for k, v in result.items()) + "\n")
+        if result["status"] == "failed":
+            raise SystemExit(1)
+    elif args.action == "verify":
+        print(json.dumps(verify(root)))
     else:
         print("publish" if release(root, only_changed=args.only_changed) else "current")
 

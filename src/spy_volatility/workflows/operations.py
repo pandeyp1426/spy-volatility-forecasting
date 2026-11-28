@@ -48,6 +48,9 @@ class Operations:
         self.store_path = Path(store_path or self.root / self.config["collection"]["store"]).resolve()
         self.clock, self.acquire, self.mode = clock, acquire, evidence_mode
         self.retention = S3Retention(self.config.get("retention", {}))
+        self.study_scope = self.config["collection"].get("study")
+        if self.study_scope not in (None, "pilot_2026", "formal_2027"):
+            raise ValueError("Unknown collection study")
         if evidence_mode not in ("live", "synthetic_demo"):
             raise ValueError("Unknown evidence mode")
         if evidence_mode == "synthetic_demo" and store_path is None:
@@ -88,6 +91,8 @@ class Operations:
         pos = self.calendar.index.get_loc(origin)
         future = self.calendar.iloc[pos+1:pos+6]
         study = study_for(origin.date().isoformat(), dates(future.index))
+        if self.study_scope and study != self.study_scope:
+            raise ValueError("Origin does not belong to this collector's study")
         close = self.calendar.market_close.iloc[pos]
         target_close = future.market_close.iloc[-1]
         if study == "formal_2027":
@@ -260,6 +265,8 @@ class Operations:
             return self.fail(start, output, error)
 
     def import_pilot(self):
+        if self.study_scope == "formal_2027":
+            return {"status": "not_eligible", "reason": "Manual pilot belongs to the separate pilot store"}
         item = self.config.get("manual_pilot")
         if not item:
             return {"status": "not_configured"}
@@ -286,7 +293,7 @@ class Operations:
     def forecasts(self):
         return [r for r in self.rows() if r["kind"] in ("forecast", "pilot_import")]
 
-    def missing(self):
+    def missing(self, study=None):
         existing = {(r["kind"], r.get("context", {}).get("origin")) for r in self.rows()}
         retained = {r["retained_event_hash"] for r in self.rows("retention_receipt") if r["retained_by_deadline"]}
         candidates = {r["context"]["origin"] for r in self.rows("forecast")
@@ -300,6 +307,8 @@ class Operations:
             try:
                 context = self.context(origin)
             except ValueError:
+                continue
+            if study and context["study"] != study:
                 continue
             if now > pd.Timestamp(context["issue_deadline_utc"]) and context["origin"] not in candidates:
                 if ("forecast_missing", context["origin"]) not in existing:
@@ -337,9 +346,11 @@ class Operations:
         except Exception as error:
             return self.fail(start, output, error)
 
-    def outcomes(self, origin=None, reason=None):
+    def outcomes(self, origin=None, reason=None, study=None):
         selected = {}
         for forecast in self.forecasts():
+            if study and forecast["context"]["study"] != study:
+                continue
             date = forecast["context"]["origin"]
             if origin is None or date == origin:
                 selected.setdefault(date, forecast)
@@ -497,7 +508,10 @@ class Operations:
                 if row["kind"] == "forecast":
                     schedule = pd.read_csv(output / "calendar.csv", index_col="session", parse_dates=["session", "market_open", "market_close"])
                     result, _, _ = pilot.calculate(prices, self.model, schedule)
-                    if result != row["forecast"]:
+                    from spy_volatility.workflows.public_forecasts import _pilot_replay_matches
+                    matches = (_pilot_replay_matches(result, row["forecast"])
+                               if row["context"]["study"] == "pilot_2026" else result == row["forecast"])
+                    if not matches:
                         raise ValueError("Forecast replay mismatch")
                 else:
                     c = row["context"]
@@ -575,6 +589,23 @@ class Operations:
                     return [self.metrics(study)]
                 if action == "retain":
                     return self.retain_records()
+                if action in ("pilot-cycle", "formal-cycle"):
+                    scope = "pilot_2026" if action == "pilot-cycle" else "formal_2027"
+                    if scope == "formal_2027" and self.config["collection"].get("study") != scope:
+                        raise ValueError("Formal scheduler requires its separate formal_2027 configuration/store")
+                    selected = self.now()
+                    schedule = pilot.pilot_schedule(selected.to_pydatetime())
+                    try:
+                        context = self.context(schedule.index[20])
+                    except ValueError:
+                        context = None
+                    forecast = {"status": "outside_issue_window"}
+                    if (context and context["study"] == scope
+                            and selected <= pd.Timestamp(context["issue_deadline_utc"])):
+                        forecast = self.forecast()
+                    # Maintenance runs even when issuance is not due. Never backfill
+                    # a missed origin; a download crossing the deadline stays late.
+                    return [forecast, *self.missing(scope), *self.outcomes(study=scope), *self.retain_records()]
                 if action != "cycle":
                     raise ValueError("Unknown operation")
                 try:
@@ -584,6 +615,10 @@ class Operations:
                                           error={"type": type(error).__name__, "message": str(error)})
                 return [imported, self.forecast(), *self.missing(), *self.outcomes(), *self.scores(pilots_only=True), *self.retain_records()]
         except BusyError as error:
+            # The first worker may not yet have written store_created. A busy
+            # event must never become the identity record of a fresh store.
+            if not self.rows():
+                return [{"kind": "worker_busy", "status": "busy", "reason": str(error)}]
             return [self.event("worker_busy", status="busy", reason=str(error))]
         except Exception as error:
             # Do not append to a damaged chain, whose evidence must be preserved.
@@ -613,7 +648,7 @@ def public_result(row):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["check", "cycle", "forecast", "outcomes", "import-pilot", "status", "verify", "score", "metrics", "retain", "demo"])
+    parser.add_argument("action", choices=["check", "cycle", "pilot-cycle", "formal-cycle", "forecast", "outcomes", "import-pilot", "status", "verify", "score", "metrics", "retain", "demo"])
     parser.add_argument("--config", default="configs/operations.toml")
     parser.add_argument("--origin", help="Existing forecast origin, for outcome acquisition only")
     parser.add_argument("--reason", help="Explicit revision reason; preserves all previous records")

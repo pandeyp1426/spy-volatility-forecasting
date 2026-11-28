@@ -16,6 +16,8 @@ def test_hosted_tick_cannot_initialize_a_missing_or_empty_journal(tmp_path):
         '[collection]\nstore="artifacts/operations"\npilot_start="2026-11-12"\n[prepared]\nbundle="bundle"')
     with pytest.raises(FileNotFoundError, match="journal"):
         hosted.collect(tmp_path)
+    with pytest.raises(FileNotFoundError, match="journal"):
+        hosted.verify(tmp_path)
     state = tmp_path / "artifacts/operations"
     assert not state.exists()
     state.mkdir(parents=True)
@@ -23,6 +25,8 @@ def test_hosted_tick_cannot_initialize_a_missing_or_empty_journal(tmp_path):
         db.execute("CREATE TABLE events(sequence, payload)")
     with pytest.raises(ValueError, match="configuration"):
         hosted.collect(tmp_path)
+    with pytest.raises(ValueError, match="configuration"):
+        hosted.verify(tmp_path)
 
 
 @pytest.mark.parametrize(("mode", "expected"), [("current", False), ("old", True), ("unreachable", True)])
@@ -30,9 +34,13 @@ def test_retry_compares_the_deployed_rows_before_publishing(tmp_path, monkeypatc
     rows = [{"id": "verified"}]
     exported = []
     monkeypatch.setattr(hosted, "read_forecasts", lambda root: rows)
+    coverage = {"missed_origins": [], "missed_outcome_origins": []}
+    monkeypatch.setattr(hosted, "read_coverage", lambda root: coverage)
     monkeypatch.setattr(hosted.public_export, "export", exported.append)
 
     def fetch(url, timeout):
+        if url.endswith("status.json"):
+            return BytesIO(json.dumps({"data": {"collection": coverage}}).encode())
         assert url == hosted.PUBLISHED
         if mode == "unreachable":
             raise URLError("offline")
@@ -64,3 +72,17 @@ def test_handoff_preserves_the_remote_journal_prefix(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="diverged"):
         seed.advance_checkout(checkout)
     assert remote.db.read_bytes() == preserved
+
+
+def test_new_missing_session_publishes_even_when_forecasts_are_unchanged(tmp_path, monkeypatch):
+    monkeypatch.setattr(hosted, "read_forecasts", lambda root: [])
+    monkeypatch.setattr(hosted, "read_coverage", lambda root: {"missed_origins": ["2026-11-27"], "missed_outcome_origins": []})
+    def fetch(url, timeout):
+        data = {"dataset": "forecasts", "data": {"rows": []}} if url.endswith("forecasts.json") else {
+            "data": {"collection": {"missed_origins": [], "missed_outcome_origins": []}}}
+        return BytesIO(json.dumps(data).encode())
+    monkeypatch.setattr(hosted, "urlopen", fetch)
+    exported = []
+    monkeypatch.setattr(hosted.public_export, "export", exported.append)
+    assert hosted.release(tmp_path, only_changed=True)
+    assert exported == [tmp_path]
